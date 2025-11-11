@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "496145699619",
+    "project_id": "studybuddy-12bbb",
+    "storage_bucket": "studybuddy-12bbb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:496145699619:android:766f9f070b56acfe94b296",
+        "android_client_info": {
+          "package_name": "np.ict.mad.studybuddy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDItEMRoVWMvGBwL2oq5oaH3MnqZJvAPZs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
