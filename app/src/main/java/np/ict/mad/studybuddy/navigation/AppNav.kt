@@ -9,6 +9,8 @@ import androidx.navigation.navArgument
 import np.ict.mad.studybuddy.feature.auth.LoginScreen
 import np.ict.mad.studybuddy.feature.home.HomeScreen
 import np.ict.mad.studybuddy.feature.notes.NotesScreen
+import np.ict.mad.studybuddy.feature.motivation.MotivationScreen
+import np.ict.mad.studybuddy.feature.motivation.FavouriteScreen
 
 @Composable
 fun AppNav() {
@@ -32,10 +34,22 @@ fun AppNav() {
             val username = backStack.arguments?.getString("username").orEmpty()
             HomeScreen(
                 username = username,
-                onOpenNotes = { nav.navigate("notes") }
+                onOpenNotes = { nav.navigate("notes") },
+                onOpenMotivation = { nav.navigate("motivation") }
             )
         }
 
         composable("notes") { NotesScreen() }
+
+        composable("motivation") {
+            MotivationScreen(
+                onOpenFavourites = { nav.navigate("favourites") }
+            )
+        }
+
+        composable("favourites") {
+            FavouriteScreen()
+        }
+
     }
 }

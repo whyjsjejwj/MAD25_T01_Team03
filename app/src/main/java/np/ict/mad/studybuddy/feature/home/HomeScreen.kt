@@ -9,7 +9,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HomeScreen(
     username: String,
-    onOpenNotes: () -> Unit
+    onOpenNotes: () -> Unit,
+    onOpenMotivation: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -24,5 +25,10 @@ fun HomeScreen(
         Button(onClick = onOpenNotes, modifier = Modifier.fillMaxWidth()) {
             Text("Open Notes Manager")
         }
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = onOpenMotivation) {
+            Text("Motivation Hub")
+        }
+
     }
 }
