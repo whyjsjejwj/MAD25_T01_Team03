@@ -10,7 +10,8 @@ import androidx.compose.ui.unit.dp
 fun HomeScreen(
     username: String,
     onOpenNotes: () -> Unit,
-    onOpenMotivation: () -> Unit
+    onOpenMotivation: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -19,16 +20,35 @@ fun HomeScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text("Welcome, $username!", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(12.dp))
-        Text("StudyBuddy Home", style = MaterialTheme.typography.bodyLarge)
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onOpenNotes, modifier = Modifier.fillMaxWidth()) {
+        Spacer(Modifier.height(16.dp))
+
+        // Notes button
+        Button(
+            onClick = onOpenNotes,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Open Notes Manager")
         }
+
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onOpenMotivation) {
+
+        // Motivation Hub button
+        Button(
+            onClick = onOpenMotivation,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Motivation Hub")
         }
 
+        Spacer(Modifier.height(16.dp))
+
+        // Logout button
+        Button(
+            onClick = onLogout,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
+        ) {
+            Text("Logout")
+        }
     }
 }
