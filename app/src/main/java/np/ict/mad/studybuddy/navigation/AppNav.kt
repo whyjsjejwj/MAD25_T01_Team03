@@ -12,21 +12,24 @@ import np.ict.mad.studybuddy.feature.auth.LoginPreferences
 import np.ict.mad.studybuddy.feature.auth.LoginScreen
 import np.ict.mad.studybuddy.feature.home.HomeScreen
 import np.ict.mad.studybuddy.feature.notes.NotesScreen
+import np.ict.mad.studybuddy.feature.notes.EditNoteScreen
 import np.ict.mad.studybuddy.feature.motivation.MotivationScreen
 import np.ict.mad.studybuddy.feature.motivation.FavouriteScreen
 
+
 @Composable
 fun AppNav() {
+
     val nav = rememberNavController()
 
-    // DataStore (remember me)
+    // DataStore (for remember me login)
     val context = LocalContext.current
     val loginPrefs = remember { LoginPreferences(context) }
 
     val isLoggedIn by loginPrefs.isLoggedIn.collectAsState(initial = false)
     val savedUsername by loginPrefs.username.collectAsState(initial = "")
 
-    // Auto login on app start
+    // Auto-login
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn && !savedUsername.isNullOrEmpty()) {
             nav.navigate("home/$savedUsername") {
@@ -52,14 +55,17 @@ fun AppNav() {
         // HOME SCREEN
         composable(
             route = "home/{username}",
-            arguments = listOf(navArgument("username") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("username") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
+
             val username = backStackEntry.arguments?.getString("username").orEmpty()
             val scope = rememberCoroutineScope()
 
             HomeScreen(
                 username = username,
-                onOpenNotes = { nav.navigate("notes") },
+                onOpenNotes = { nav.navigate("notes/$username") },
                 onOpenMotivation = { nav.navigate("motivation") },
                 onLogout = {
                     scope.launch { loginPrefs.logout() }
@@ -71,19 +77,51 @@ fun AppNav() {
             )
         }
 
-        // NOTES SCREEN
-        composable("notes") {
-            NotesScreen()
+        // NOTES LIST SCREEN
+        composable(
+            route = "notes/{username}",
+            arguments = listOf(
+                navArgument("username") { type = NavType.StringType }
+            )
+        ) { backStack ->
+
+            val username = backStack.arguments!!.getString("username")!!
+
+            NotesScreen(
+                username = username,
+                onEdit = { noteId ->
+                    nav.navigate("editNote/$username/$noteId")
+                }
+            )
         }
 
-        // MOTIVATION SCREEN
+        // EDIT NOTE SCREEN (IMPORTANT FIX!)
+        composable(
+            route = "editNote/{username}/{noteId}",
+            arguments = listOf(
+                navArgument("username") { type = NavType.StringType },
+                navArgument("noteId") { type = NavType.IntType }
+            )
+        ) { backStack ->
+
+            val username = backStack.arguments!!.getString("username")!!
+            val noteId = backStack.arguments!!.getInt("noteId")
+
+            EditNoteScreen(
+                username = username,
+                noteId = noteId,
+                onBack = { nav.popBackStack() }
+            )
+        }
+
+        // MOTIVATION
         composable("motivation") {
             MotivationScreen(
                 onOpenFavourites = { nav.navigate("favourites") }
             )
         }
 
-        // FAVOURITES SCREEN
+        // FAVOURITES
         composable("favourites") {
             FavouriteScreen()
         }

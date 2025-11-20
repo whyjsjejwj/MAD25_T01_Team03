@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "username": "student",
+      "notes": [
+        {
+          "id": 1,
+          "title": "Math - Chapter 1",
+          "content": "Algebra fundamentals..."
+        },
+        {
+          "id": 2,
+          "title": "Science - Chapter 2",
+          "content": "Photosynthesis summary..."
+        }
+      ]
+    }
+  ]
+}

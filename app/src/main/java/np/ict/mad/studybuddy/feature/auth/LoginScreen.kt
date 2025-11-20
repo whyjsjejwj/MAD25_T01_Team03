@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import np.ict.mad.studybuddy.core.storage.UserJsonStorage
 
 @Composable
 fun LoginScreen(
@@ -32,8 +34,10 @@ fun LoginScreen(
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    val validUser = "student"
-    val validPass = "123456"
+    // Load users.json
+    val context = LocalContext.current
+    val userStorage = remember { UserJsonStorage(context) }
+    val users = remember { userStorage.loadUsers() }
 
     val gradient = Brush.verticalGradient(
         listOf(Color(0xFF4A90E2), Color(0xFF3A7BD5))
@@ -55,9 +59,11 @@ fun LoginScreen(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
                 Text("StudyBuddy", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(16.dp))
 
+                // Username field
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it; error = null },
@@ -72,6 +78,7 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(12.dp))
 
+                // Password field
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it; error = null },
@@ -93,6 +100,7 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(8.dp))
 
+                // Remember Me
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -104,6 +112,7 @@ fun LoginScreen(
                     Text("Remember Me")
                 }
 
+                // Error message
                 if (error != null) {
                     Text(
                         error!!,
@@ -115,13 +124,19 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(16.dp))
 
+                // LOGIN BUTTON
                 Button(
                     onClick = {
+
+                        val matchedUser = users.find {
+                            it.username == username && it.password == password
+                        }
+
                         when {
                             username.isEmpty() || password.isEmpty() ->
                                 error = "Please fill in all fields."
 
-                            username == validUser && password == validPass -> {
+                            matchedUser != null -> {
                                 scope.launch {
                                     if (rememberMe) {
                                         loginPrefs.saveLogin(username)
@@ -133,13 +148,15 @@ fun LoginScreen(
                             else -> error = "Invalid username or password."
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
                 ) {
                     Text("Sign In", fontSize = 16.sp)
                 }
 
                 Spacer(Modifier.height(8.dp))
-                Text("Hint: student / 123456", style = MaterialTheme.typography.bodySmall)
+                Text("Login with your saved account", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
