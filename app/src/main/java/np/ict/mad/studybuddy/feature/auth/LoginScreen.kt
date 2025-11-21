@@ -1,5 +1,6 @@
 package np.ict.mad.studybuddy.feature.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -22,12 +24,14 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
+import np.ict.mad.studybuddy.R
 
 @Composable
 fun LoginScreen(
     loginPrefs: LoginPreferences,
     onLoginSuccess: (String, String) -> Unit,
-    onNavigateRegister: () -> Unit
+    onNavigateRegister: () -> Unit,
+    onNavigateForgotPassword: () -> Unit
 ) {
     val auth = remember { FirebaseAuth.getInstance() }
     val firestore = remember { FirebaseFirestore.getInstance() }
@@ -60,8 +64,14 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Text("StudyBuddy", style = MaterialTheme.typography.headlineSmall)
-                Spacer(Modifier.height(16.dp))
+                // Logo
+                Image(
+                    painter = painterResource(id = R.drawable.studybuddylogo_cropped),
+                    contentDescription = "StudyBuddy Logo",
+                    modifier = Modifier
+                        .size(200.dp)
+                        .padding(bottom = 0.dp)
+                )
 
                 // Email field
                 OutlinedTextField(
@@ -100,16 +110,25 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Remember Me
+                // Remember Me + Forgot Password
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Checkbox(
-                        checked = rememberMe,
-                        onCheckedChange = { rememberMe = it }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = rememberMe,
+                            onCheckedChange = { rememberMe = it }
+                        )
+                        Text("Remember Me")
+                    }
+
+                    Text(
+                        text = "Forgot Password?",
+                        modifier = Modifier.clickable { onNavigateForgotPassword() },
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    Text("Remember Me")
                 }
 
                 // Error message
@@ -118,7 +137,9 @@ fun LoginScreen(
                         error!!,
                         color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
                     )
                 }
 
@@ -153,7 +174,6 @@ fun LoginScreen(
                                     .addOnFailureListener {
                                         error = "Failed to load profile."
                                     }
-
                             }
                             .addOnFailureListener {
                                 error = "Invalid email or password."
@@ -168,6 +188,7 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(12.dp))
 
+                // Register text
                 Text(
                     "Don't have an account? Register here",
                     modifier = Modifier.clickable { onNavigateRegister() },

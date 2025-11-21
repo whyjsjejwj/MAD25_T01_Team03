@@ -1,5 +1,6 @@
 package np.ict.mad.studybuddy.feature.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -18,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
+import np.ict.mad.studybuddy.R
 
 @Composable
 fun RegisterScreen(
@@ -34,7 +37,6 @@ fun RegisterScreen(
 
     var showPassword by rememberSaveable { mutableStateOf(false) }
     var showConfirmPassword by rememberSaveable { mutableStateOf(false) }
-
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var loading by rememberSaveable { mutableStateOf(false) }
 
@@ -61,6 +63,15 @@ fun RegisterScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
+                // 🔥 Logo (added)
+                Image(
+                    painter = painterResource(id = R.drawable.studybuddylogo_cropped),
+                    contentDescription = "StudyBuddy Logo",
+                    modifier = Modifier
+                        .size(180.dp)
+                        .padding(bottom = 4.dp)
+                )
+
                 Text("Create Account", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(16.dp))
 
@@ -85,11 +96,7 @@ fun RegisterScreen(
                     onValueChange = { displayName = it; error = null },
                     label = { Text("Display Name") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(
-                        imeAction = ImeAction.Next,
-                        keyboardType = KeyboardType.Text
-                    )
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -106,11 +113,7 @@ fun RegisterScreen(
                             Text(if (showPassword) "Hide" else "Show")
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(
-                        imeAction = ImeAction.Next,
-                        keyboardType = KeyboardType.Password
-                    )
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -127,11 +130,7 @@ fun RegisterScreen(
                             Text(if (showConfirmPassword) "Hide" else "Show")
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(
-                        imeAction = ImeAction.Done,
-                        keyboardType = KeyboardType.Password
-                    )
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -172,7 +171,6 @@ fun RegisterScreen(
 
                                         val uid = auth.currentUser!!.uid
 
-                                        // Save display name in Firestore
                                         val profile = mapOf(
                                             "email" to email,
                                             "displayName" to displayName

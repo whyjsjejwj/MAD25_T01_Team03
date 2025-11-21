@@ -10,23 +10,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import np.ict.mad.studybuddy.core.storage.FirestoreNote
 import np.ict.mad.studybuddy.core.storage.NotesFirestore
-import androidx.compose.material.icons.filled.School
 
 @Composable
 fun HomeScreen(
     uid: String,
     displayName: String,
+    email: String,
     onOpenNotes: () -> Unit,
     onOpenMotivation: () -> Unit,
-    onLogout: () -> Unit
+    onOpenProfile: () -> Unit,
 ) {
-    // Fetch notes for THIS user's UID
     val notesDb = remember { NotesFirestore() }
     var notes by remember { mutableStateOf<List<FirestoreNote>>(emptyList()) }
 
@@ -39,6 +37,7 @@ fun HomeScreen(
     Scaffold(
         bottomBar = {
             BottomNavBar(
+                selectedTab = BottomNavTab.HOME,
                 onHome = {},
                 onOpenNotes = onOpenNotes,
                 onOpenMotivation = onOpenMotivation
@@ -54,70 +53,51 @@ fun HomeScreen(
         ) {
 
             // ---------- TOP BAR ----------
-            TopBar(onLogout = onLogout)
-
-            Spacer(Modifier.height(16.dp))
-
-            // ---------- WELCOME TEXT ----------
-            Text(
-                text = "Welcome back, $displayName!",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFFFA000)
+            TopBar(
+                displayName = displayName,
+                email = email,
+                onOpenProfile = onOpenProfile
             )
 
             Spacer(Modifier.height(16.dp))
 
-            // ---------- 2 CARDS ----------
+            // ---------- WELCOME ----------
+            Text(
+                text = "Welcome back, $displayName!",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // ---------- TWO SUMMARY CARDS ----------
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                // Study Streak card
-                Card(
-                    modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(Color(0xFFFFF8E1)),
-                    elevation = CardDefaults.cardElevation(4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text("Study Streak", color = Color.Gray)
-                        Text("0 Days", fontWeight = FontWeight.Bold)
-                    }
-                }
+                // Study Streak
+                SummaryCard(
+                    title = "Study Streak",
+                    subtitle = "0 Days",
+                    modifier = Modifier.weight(1f)
+                )
 
-                // Where you left off card
-                Card(
-                    modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(Color(0xFFFFF8E1)),
-                    elevation = CardDefaults.cardElevation(4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text("Where you left off", color = Color.Gray)
-
-                        if (latestNote == null) {
-                            Text("—", color = Color.DarkGray)
-                        } else {
-                            Text(latestNote.title, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
+                SummaryCard(
+                    title = "Total Notes",
+                    subtitle = "${notes.size} Notes",
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             Spacer(Modifier.height(24.dp))
 
-            // ---------- NOTES PREVIEW CARD ----------
+            // ---------- LATEST NOTE CARD ----------
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(Color(0xFFFFF9C4)),
-                elevation = CardDefaults.cardElevation(4.dp),
-                shape = RoundedCornerShape(12.dp)
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(3.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -126,8 +106,9 @@ fun HomeScreen(
                 ) {
                     Text(
                         "Your Latest Note",
-                        color = Color(0xFFFFA000),
-                        fontWeight = FontWeight.SemiBold
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMedium
                     )
 
                     Spacer(Modifier.height(8.dp))
@@ -135,13 +116,14 @@ fun HomeScreen(
                     if (latestNote == null) {
                         Text(
                             "No notes yet. Tap the Notes tab to create one.",
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
                         Text(
                             latestNote.title,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Spacer(Modifier.height(4.dp))
@@ -150,7 +132,7 @@ fun HomeScreen(
                             latestNote.content,
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 3,
-                            color = Color.DarkGray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Spacer(Modifier.height(16.dp))
@@ -168,11 +150,37 @@ fun HomeScreen(
     }
 }
 
+@Composable
+fun SummaryCard(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(3.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(title, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(subtitle, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
 // ================================================================
 // TOP BAR
 // ================================================================
 @Composable
-fun TopBar(onLogout: () -> Unit) {
+fun TopBar(
+    displayName: String,
+    email: String,
+    onOpenProfile: () -> Unit,
+) {
     var showMenu by remember { mutableStateOf(false) }
 
     Row(
@@ -181,14 +189,14 @@ fun TopBar(onLogout: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painterResource(id = R.drawable.studybuddylogo_cutout),
+            painterResource(id = R.drawable.studybuddylogo_cropped),
             contentDescription = "StudyBuddy Logo",
             modifier = Modifier.size(100.dp)
         )
 
         Row(verticalAlignment = Alignment.CenterVertically) {
 
-            IconButton(onClick = { /* Search later */ }) {
+            IconButton(onClick = {}) {
                 Icon(Icons.Default.Search, contentDescription = "Search")
             }
 
@@ -202,51 +210,14 @@ fun TopBar(onLogout: () -> Unit) {
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Logout") },
+                        text = { Text("Profile") },
                         onClick = {
                             showMenu = false
-                            onLogout()
+                            onOpenProfile()
                         }
                     )
                 }
             }
         }
-    }
-}
-
-// ================================================================
-// BOTTOM NAV BAR
-// ================================================================
-@Composable
-fun BottomNavBar(
-    onHome: () -> Unit,
-    onOpenNotes: () -> Unit,
-    onOpenMotivation: () -> Unit
-) {
-    NavigationBar(containerColor = Color.White) {
-
-        NavigationBarItem(
-            selected = true,
-            onClick = onHome,
-            icon = { Icon(Icons.Default.Home, contentDescription = "Home") }
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = onOpenNotes,
-            icon = { Icon(Icons.Default.Edit, contentDescription = "Notes") }
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* Quiz later */ },
-            icon = { Icon(Icons.Filled.School, contentDescription = "Quiz") }
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = onOpenMotivation,
-            icon = { Icon(Icons.Default.Star, contentDescription = "Motivation") }
-        )
     }
 }
