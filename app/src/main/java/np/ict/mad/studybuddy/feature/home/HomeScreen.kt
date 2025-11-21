@@ -1,6 +1,7 @@
 package np.ict.mad.studybuddy.feature.home
 
 import np.ict.mad.studybuddy.R
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -10,35 +11,30 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.Image
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import np.ict.mad.studybuddy.core.storage.Note
-import np.ict.mad.studybuddy.core.storage.NotesStorage
+import np.ict.mad.studybuddy.core.storage.FirestoreNote
+import np.ict.mad.studybuddy.core.storage.NotesFirestore
 import androidx.compose.material.icons.filled.School
 
 @Composable
 fun HomeScreen(
-    username: String,
+    uid: String,
+    displayName: String,
     onOpenNotes: () -> Unit,
     onOpenMotivation: () -> Unit,
     onLogout: () -> Unit
 ) {
-    val displayName = if (username.isBlank()) "Student" else username
+    // Fetch notes for THIS user's UID
+    val notesDb = remember { NotesFirestore() }
+    var notes by remember { mutableStateOf<List<FirestoreNote>>(emptyList()) }
 
-    // ===== FETCH NOTES FOR HOME =====
-    val context = LocalContext.current
-    val notesStorage = remember { NotesStorage(context) }
-
-    var notes by remember { mutableStateOf(listOf<Note>()) }
-
-    LaunchedEffect(username) {
-        notes = notesStorage.getUserNotes(username)
+    LaunchedEffect(uid) {
+        notes = notesDb.getNotes(uid)
     }
 
-    val latestNote = notes.maxByOrNull { it.id }
+    val latestNote = notes.lastOrNull()
 
     Scaffold(
         bottomBar = {
@@ -77,6 +73,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+
                 // Study Streak card
                 Card(
                     modifier = Modifier.weight(1f),
@@ -240,10 +237,9 @@ fun BottomNavBar(
             icon = { Icon(Icons.Default.Edit, contentDescription = "Notes") }
         )
 
-        // QUIZ ICON (NOT CONNECTED)
         NavigationBarItem(
             selected = false,
-            onClick = { /* Not implemented*/ },
+            onClick = { /* Quiz later */ },
             icon = { Icon(Icons.Filled.School, contentDescription = "Quiz") }
         )
 
@@ -254,5 +250,3 @@ fun BottomNavBar(
         )
     }
 }
-
-

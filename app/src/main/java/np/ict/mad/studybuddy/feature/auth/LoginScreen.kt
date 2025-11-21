@@ -1,6 +1,7 @@
 package np.ict.mad.studybuddy.feature.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -11,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -19,25 +19,25 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
-import np.ict.mad.studybuddy.core.storage.UserJsonStorage
 
 @Composable
 fun LoginScreen(
     loginPrefs: LoginPreferences,
-    onLoginSuccess: (String) -> Unit
+    onLoginSuccess: (String, String) -> Unit,
+    onNavigateRegister: () -> Unit
 ) {
-    var username by rememberSaveable { mutableStateOf("") }
+    val auth = remember { FirebaseAuth.getInstance() }
+    val firestore = remember { FirebaseFirestore.getInstance() }
+    val scope = rememberCoroutineScope()
+
+    var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var rememberMe by rememberSaveable { mutableStateOf(false) }
     var showPassword by rememberSaveable { mutableStateOf(false) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-
-    // Load users.json
-    val context = LocalContext.current
-    val userStorage = remember { UserJsonStorage(context) }
-    val users = remember { userStorage.loadUsers() }
 
     val gradient = Brush.verticalGradient(
         listOf(Color(0xFF4A90E2), Color(0xFF3A7BD5))
@@ -63,16 +63,16 @@ fun LoginScreen(
                 Text("StudyBuddy", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(16.dp))
 
-                // Username field
+                // Email field
                 OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it; error = null },
-                    label = { Text("Username") },
+                    value = email,
+                    onValueChange = { email = it; error = null },
+                    label = { Text("Email Address") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next,
-                        keyboardType = KeyboardType.Text
+                        keyboardType = KeyboardType.Email
                     )
                 )
 
@@ -127,26 +127,37 @@ fun LoginScreen(
                 // LOGIN BUTTON
                 Button(
                     onClick = {
-
-                        val matchedUser = users.find {
-                            it.username == username && it.password == password
+                        if (email.isEmpty() || password.isEmpty()) {
+                            error = "Please fill in all fields."
+                            return@Button
                         }
 
-                        when {
-                            username.isEmpty() || password.isEmpty() ->
-                                error = "Please fill in all fields."
+                        auth.signInWithEmailAndPassword(email, password)
+                            .addOnSuccessListener { result ->
+                                val uid = result.user!!.uid
 
-                            matchedUser != null -> {
-                                scope.launch {
-                                    if (rememberMe) {
-                                        loginPrefs.saveLogin(username)
+                                firestore.collection("users")
+                                    .document(uid)
+                                    .get()
+                                    .addOnSuccessListener { doc ->
+                                        val displayName = doc.getString("displayName") ?: ""
+
+                                        scope.launch {
+                                            if (rememberMe) {
+                                                loginPrefs.saveLogin(uid, email, displayName)
+                                            }
+                                        }
+
+                                        onLoginSuccess(uid, displayName)
                                     }
-                                }
-                                onLoginSuccess(username)
-                            }
+                                    .addOnFailureListener {
+                                        error = "Failed to load profile."
+                                    }
 
-                            else -> error = "Invalid username or password."
-                        }
+                            }
+                            .addOnFailureListener {
+                                error = "Invalid email or password."
+                            }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -155,8 +166,14 @@ fun LoginScreen(
                     Text("Sign In", fontSize = 16.sp)
                 }
 
-                Spacer(Modifier.height(8.dp))
-                Text("Login with your saved account", style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    "Don't have an account? Register here",
+                    modifier = Modifier.clickable { onNavigateRegister() },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }

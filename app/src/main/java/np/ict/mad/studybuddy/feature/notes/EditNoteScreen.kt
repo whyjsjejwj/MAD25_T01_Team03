@@ -5,109 +5,98 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
-import np.ict.mad.studybuddy.core.storage.NotesStorage
-import np.ict.mad.studybuddy.core.storage.Note
+import kotlinx.coroutines.launch
+import np.ict.mad.studybuddy.core.storage.FirestoreNote
+import np.ict.mad.studybuddy.core.storage.NotesFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditNoteScreen(
-    username: String,
+    username: String,   // now UID
     noteId: Int,
     onBack: () -> Unit
 ) {
-    val context = LocalContext.current
-    val notesStorage = remember { NotesStorage(context) }
+    val notesDb = remember { NotesFirestore() }
+    val scope = rememberCoroutineScope()
 
-    var note by remember { mutableStateOf<Note?>(null) }
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
 
-    // Load specific note
-    LaunchedEffect(true) {
-        val userNotes = notesStorage.getUserNotes(username)
-        note = userNotes.find { it.id == noteId }
+    // Load note data once when screen opens
+    LaunchedEffect(noteId) {
+        val note = notesDb.getNote(username, noteId)
+        if (note != null) {
+            title = note.title
+            content = note.content
+        }
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Edit Note") }
-            )
-        }
+        topBar = { TopAppBar(title = { Text("Edit Note") }) }
     ) { innerPadding ->
 
-        note?.let { currentNote ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(24.dp)
+                .fillMaxSize()
+        ) {
 
-            var title by remember { mutableStateOf(currentNote.title) }
-            var content by remember { mutableStateOf(currentNote.content) }
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Title") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-            Column(
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = content,
+                onValueChange = { content = it },
+                label = { Text("Content") },
                 modifier = Modifier
-                    .padding(innerPadding)
-                    .padding(24.dp)
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .height(220.dp),
+                maxLines = 10
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text("Content") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    maxLines = Int.MAX_VALUE
-                )
-
-                Spacer(Modifier.height(20.dp))
-
-                // SAVE BUTTON
-                Button(
-                    onClick = {
-                        notesStorage.updateNote(
-                            username = username,
-                            noteId = noteId,
-                            newTitle = title,
-                            newContent = content
-                        )
-                        onBack()
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Save")
-                }
-
-                Spacer(Modifier.height(10.dp))
-
-                // DELETE BUTTON
+                // DELETE
                 OutlinedButton(
                     onClick = {
-                        notesStorage.deleteNote(username, noteId)
-                        onBack()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
+                        scope.launch {
+                            notesDb.deleteNote(username, noteId)
+                            onBack()   // return to NotesScreen
+                        }
+                    }
                 ) {
                     Text("Delete")
                 }
-            }
-        } ?: run {
-            // If note not found
-            Box(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize(),
-            ) {
-                Text("Note not found.")
+
+                // SAVE
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val updatedNote = FirestoreNote(
+                                id = noteId,
+                                title = title.ifBlank { "Untitled" },
+                                content = content
+                            )
+
+                            notesDb.updateNote(username, updatedNote)
+                            onBack()  // return to NotesScreen
+                        }
+                    }
+                ) {
+                    Text("Save")
+                }
             }
         }
     }

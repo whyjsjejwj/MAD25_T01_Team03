@@ -10,29 +10,31 @@ import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
 import np.ict.mad.studybuddy.feature.auth.LoginPreferences
 import np.ict.mad.studybuddy.feature.auth.LoginScreen
+import np.ict.mad.studybuddy.feature.auth.RegisterScreen
 import np.ict.mad.studybuddy.feature.home.HomeScreen
 import np.ict.mad.studybuddy.feature.notes.NotesScreen
 import np.ict.mad.studybuddy.feature.notes.EditNoteScreen
 import np.ict.mad.studybuddy.feature.motivation.MotivationScreen
 import np.ict.mad.studybuddy.feature.motivation.FavouriteScreen
 
-
 @Composable
 fun AppNav() {
 
     val nav = rememberNavController()
 
-    // DataStore (for remember me login)
     val context = LocalContext.current
     val loginPrefs = remember { LoginPreferences(context) }
 
     val isLoggedIn by loginPrefs.isLoggedIn.collectAsState(initial = false)
-    val savedUsername by loginPrefs.username.collectAsState(initial = "")
+    val savedUid by loginPrefs.uid.collectAsState(initial = "")
+    val savedDisplayName by loginPrefs.displayName.collectAsState(initial = "")
 
-    // Auto-login
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn && !savedUsername.isNullOrEmpty()) {
-            nav.navigate("home/$savedUsername") {
+    var autoLoginDone by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isLoggedIn, savedUid) {
+        if (!autoLoginDone && isLoggedIn && !savedUid.isNullOrBlank()) {
+            autoLoginDone = true
+            nav.navigate("home/$savedUid/$savedDisplayName") {
                 popUpTo("login") { inclusive = true }
             }
         }
@@ -44,34 +46,49 @@ fun AppNav() {
         composable("login") {
             LoginScreen(
                 loginPrefs = loginPrefs,
-                onLoginSuccess = { username ->
-                    nav.navigate("home/$username") {
+                onLoginSuccess = { uid, displayName ->
+                    nav.navigate("home/$uid/$displayName") {
                         popUpTo("login") { inclusive = true }
                     }
-                }
+                },
+                onNavigateRegister = { nav.navigate("register") }
+            )
+        }
+
+        // REGISTER SCREEN
+        composable("register") {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    nav.navigate("login") {
+                        popUpTo("register") { inclusive = true }
+                    }
+                },
+                onBackToLogin = { nav.popBackStack() }
             )
         }
 
         // HOME SCREEN
         composable(
-            route = "home/{username}",
+            route = "home/{uid}/{displayName}",
             arguments = listOf(
-                navArgument("username") { type = NavType.StringType }
+                navArgument("uid") { type = NavType.StringType },
+                navArgument("displayName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
 
-            val username = backStackEntry.arguments?.getString("username").orEmpty()
+            val uid = backStackEntry.arguments?.getString("uid").orEmpty()
+            val displayName = backStackEntry.arguments?.getString("displayName").orEmpty()
             val scope = rememberCoroutineScope()
 
             HomeScreen(
-                username = username,
-                onOpenNotes = { nav.navigate("notes/$username") },
+                uid = uid,
+                displayName = displayName,
+                onOpenNotes = { nav.navigate("notes/$uid") },
                 onOpenMotivation = { nav.navigate("motivation") },
                 onLogout = {
                     scope.launch { loginPrefs.logout() }
-
                     nav.navigate("login") {
-                        popUpTo("home/$username") { inclusive = true }
+                        popUpTo("home/$uid/$displayName") { inclusive = true }
                     }
                 }
             )
@@ -79,49 +96,43 @@ fun AppNav() {
 
         // NOTES LIST SCREEN
         composable(
-            route = "notes/{username}",
-            arguments = listOf(
-                navArgument("username") { type = NavType.StringType }
-            )
+            route = "notes/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })
         ) { backStack ->
 
-            val username = backStack.arguments!!.getString("username")!!
+            val uid = backStack.arguments!!.getString("uid")!!
 
             NotesScreen(
-                username = username,
+                username = uid,  // now UID
                 onEdit = { noteId ->
-                    nav.navigate("editNote/$username/$noteId")
+                    nav.navigate("editNote/$uid/$noteId")
                 }
             )
         }
 
-        // EDIT NOTE SCREEN (IMPORTANT FIX!)
+        // EDIT NOTE SCREEN
         composable(
-            route = "editNote/{username}/{noteId}",
+            route = "editNote/{uid}/{noteId}",
             arguments = listOf(
-                navArgument("username") { type = NavType.StringType },
+                navArgument("uid") { type = NavType.StringType },
                 navArgument("noteId") { type = NavType.IntType }
             )
         ) { backStack ->
 
-            val username = backStack.arguments!!.getString("username")!!
+            val uid = backStack.arguments!!.getString("uid")!!
             val noteId = backStack.arguments!!.getInt("noteId")
 
             EditNoteScreen(
-                username = username,
+                username = uid,
                 noteId = noteId,
                 onBack = { nav.popBackStack() }
             )
         }
 
-        // MOTIVATION
         composable("motivation") {
-            MotivationScreen(
-                onOpenFavourites = { nav.navigate("favourites") }
-            )
+            MotivationScreen(onOpenFavourites = { nav.navigate("favourites") })
         }
 
-        // FAVOURITES
         composable("favourites") {
             FavouriteScreen()
         }

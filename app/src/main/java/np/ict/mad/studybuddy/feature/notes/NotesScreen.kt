@@ -5,26 +5,25 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import np.ict.mad.studybuddy.core.storage.Note
-import np.ict.mad.studybuddy.core.storage.NotesStorage
+import kotlinx.coroutines.launch
+import np.ict.mad.studybuddy.core.storage.FirestoreNote
+import np.ict.mad.studybuddy.core.storage.NotesFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesScreen(
-    username: String,
+    username: String,   // now actually Firebase UID
     onEdit: (Int) -> Unit
 ) {
-    val context = LocalContext.current
-    val notesStorage = remember { NotesStorage(context) }
+    val notesDb = remember { NotesFirestore() }
+    val scope = rememberCoroutineScope()
 
-    // Notes list
-    var notes by remember { mutableStateOf(listOf<Note>()) }
+    var notes by remember { mutableStateOf<List<FirestoreNote>>(emptyList()) }
 
-    // Load notes on screen start
-    LaunchedEffect(true) {
-        notes = notesStorage.getUserNotes(username)
+    // Load notes when screen is first shown, or when username changes
+    LaunchedEffect(username) {
+        notes = notesDb.getNotes(username)
     }
 
     // Add note dialog states
@@ -34,7 +33,6 @@ fun NotesScreen(
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Notes Manager") }) },
-
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -51,8 +49,8 @@ fun NotesScreen(
         Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize()
                 .padding(24.dp)
+                .fillMaxSize()
         ) {
 
             Text(
@@ -66,14 +64,11 @@ fun NotesScreen(
                 Text("You have no notes yet. Tap '+' to add one.")
             } else {
                 notes.forEach { note ->
-
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
-                            .clickable {
-                                onEdit(note.id)
-                            },
+                            .clickable { onEdit(note.id) },
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
                         Column(
@@ -81,13 +76,10 @@ fun NotesScreen(
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
-                            Text(
-                                text = note.title,
-                                style = MaterialTheme.typography.titleMedium
-                            )
+                            Text(note.title, style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                text = note.content,
+                                note.content,
                                 style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 2
                             )
@@ -98,14 +90,11 @@ fun NotesScreen(
         }
     }
 
-    // ============================
-    // ADD NOTE DIALOG
-    // ============================
+    // Add note dialog
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
             title = { Text("Add New Note") },
-
             text = {
                 Column {
                     OutlinedTextField(
@@ -128,28 +117,27 @@ fun NotesScreen(
                     )
                 }
             },
-
             confirmButton = {
                 Button(
                     onClick = {
-                        // Save new note
-                        notesStorage.addNote(
-                            username = username,
-                            title = newTitle.ifBlank { "Untitled" },
-                            content = newContent
-                        )
+                        scope.launch {
+                            val newId = if (notes.isEmpty()) 1 else notes.maxOf { it.id } + 1
 
-                        // Refresh list
-                        notes = notesStorage.getUserNotes(username)
+                            val newNote = FirestoreNote(
+                                id = newId,
+                                title = newTitle.ifBlank { "Untitled" },
+                                content = newContent
+                            )
 
-                        // Close dialog
+                            notesDb.addNote(username, newNote)
+                            notes = notesDb.getNotes(username)  // refresh
+                        }
                         showAddDialog = false
                     }
                 ) {
                     Text("Add")
                 }
             },
-
             dismissButton = {
                 OutlinedButton(onClick = { showAddDialog = false }) {
                     Text("Cancel")

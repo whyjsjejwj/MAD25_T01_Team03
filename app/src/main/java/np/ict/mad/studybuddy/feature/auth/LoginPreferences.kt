@@ -12,20 +12,32 @@ val Context.dataStore by preferencesDataStore("login_prefs")
 
 class LoginPreferences(private val context: Context) {
 
-    private val KEY_USERNAME = stringPreferencesKey("username")
+    private val KEY_UID = stringPreferencesKey("uid")
+    private val KEY_EMAIL = stringPreferencesKey("email")
+    private val KEY_DISPLAY_NAME = stringPreferencesKey("displayName")
     private val KEY_LOGGED_IN = booleanPreferencesKey("logged_in")
 
-    val username: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[KEY_USERNAME]
+    val uid: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_UID]
+    }
+
+    val email: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_EMAIL]
+    }
+
+    val displayName: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_DISPLAY_NAME]
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_LOGGED_IN] ?: false
     }
 
-    suspend fun saveLogin(username: String) {
+    suspend fun saveLogin(uid: String, email: String, displayName: String) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_USERNAME] = username
+            prefs[KEY_UID] = uid
+            prefs[KEY_EMAIL] = email
+            prefs[KEY_DISPLAY_NAME] = displayName
             prefs[KEY_LOGGED_IN] = true
         }
     }
