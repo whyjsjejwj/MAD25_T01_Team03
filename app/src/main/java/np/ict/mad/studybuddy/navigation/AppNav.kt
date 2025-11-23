@@ -99,7 +99,7 @@ fun AppNav() {
                     nav.navigate("profile/$uid/$displayName/$email")
                 },
                 onOpenNotes = { nav.navigate("notes/$uid/$displayName/$email") },
-                onOpenMotivation = { nav.navigate("motivation") }
+                onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
             )
         }
 
@@ -121,7 +121,7 @@ fun AppNav() {
                 username = uid,
                 onEdit = { noteId -> nav.navigate("editNote/$uid/$noteId") },
                 onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
-                onOpenMotivation = { nav.navigate("motivation") }
+                onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
             )
         }
 
@@ -170,13 +170,55 @@ fun AppNav() {
             )
         }
 
-        composable("motivation") {
-            MotivationScreen(onOpenFavourites = { nav.navigate("favourites") })
+        // MOTIVATION SCREEN
+        composable(
+            route = "motivation/{uid}/{displayName}/{email}",
+            arguments = listOf(
+                navArgument("uid") { type = NavType.StringType },
+                navArgument("displayName") { type = NavType.StringType },
+                navArgument("email") { type = NavType.StringType }
+            )
+        ) { backStack ->
+
+            val uid = backStack.arguments!!.getString("uid")!!
+            val displayName = backStack.arguments!!.getString("displayName")!!
+            val email = backStack.arguments!!.getString("email")!!
+
+            MotivationScreen(
+                uid = uid,
+                displayName = displayName,
+                email = email,
+                onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
+                onOpenNotes = { nav.navigate("notes/$uid/$displayName/$email") },
+                onOpenMotivation = { /* already here, do nothing */ },
+                onOpenFavourites = { nav.navigate("favourites/$uid/$displayName/$email") }
+            )
         }
 
-        composable("favourites") {
-            FavouriteScreen()
+// FAVOURITES SCREEN
+        composable(
+            route = "favourites/{uid}/{displayName}/{email}",
+            arguments = listOf(
+                navArgument("uid") { type = NavType.StringType },
+                navArgument("displayName") { type = NavType.StringType },
+                navArgument("email") { type = NavType.StringType }
+            )
+        ) { backStack ->
+
+            val uid = backStack.arguments!!.getString("uid")!!
+            val displayName = backStack.arguments!!.getString("displayName")!!
+            val email = backStack.arguments!!.getString("email")!!
+
+            FavouriteScreen(
+                uid = uid,
+                displayName = displayName,
+                email = email,
+                onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
+                onOpenNotes = { nav.navigate("notes/$uid/$displayName/$email") },
+                onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
+            )
         }
+
 
         composable("forgotPassword") {
             ForgotPasswordScreen(

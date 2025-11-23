@@ -10,15 +10,15 @@ class MotivationStorage(context: Context) {
     private val gson = Gson()
     private val type = object : TypeToken<List<MotivationItem>>() {}.type
 
-    fun saveFavourite(item: MotivationItem) {
-        val current = getFavourites().toMutableList()
-        current.add(0, item) // add newest on top
-        prefs.edit().putString("fav_list", gson.toJson(current)).apply()
-    }
-
     fun getFavourites(): List<MotivationItem> {
         val json = prefs.getString("fav_list", null) ?: return emptyList()
         return gson.fromJson(json, type)
+    }
+
+    fun saveFavourite(item: MotivationItem) {
+        val current = getFavourites().toMutableList()
+        current.add(0, item) // newest on top
+        prefs.edit().putString("fav_list", gson.toJson(current)).apply()
     }
 
     fun removeFavourite(item: MotivationItem) {

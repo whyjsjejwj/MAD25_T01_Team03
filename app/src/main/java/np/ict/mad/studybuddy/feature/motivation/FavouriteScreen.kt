@@ -8,38 +8,76 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import np.ict.mad.studybuddy.feature.home.BottomNavBar
+import np.ict.mad.studybuddy.feature.home.BottomNavTab
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FavouriteScreen() {
+fun FavouriteScreen(
+    uid: String,
+    displayName: String,
+    email: String,
+    onOpenHome: () -> Unit,
+    onOpenNotes: () -> Unit,
+    onOpenMotivation: () -> Unit
+) {
     val ctx = LocalContext.current
     val storage = remember { MotivationStorage(ctx) }
-
     var favourites by remember { mutableStateOf(storage.getFavourites()) }
 
-    Column(Modifier.padding(16.dp)) {
-        Text("Your Favourite Quotes", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(12.dp))
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Favourite Quotes") }
+            )
+        },
+        bottomBar = {
+            BottomNavBar(
+                selectedTab = BottomNavTab.MOTIVATION,
+                onHome = onOpenHome,
+                onOpenNotes = onOpenNotes,
+                onOpenMotivation = onOpenMotivation
+            )
+        }
+    ) { innerPadding ->
 
-        LazyColumn {
-            items(favourites) { item ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(item.quote, style = MaterialTheme.typography.bodyLarge)
-                        Text(item.author, style = MaterialTheme.typography.bodyMedium)
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
 
-                        Spacer(Modifier.height(10.dp))
-
-                        Button(
-                            onClick = {
-                                storage.removeFavourite(item)
-                                favourites = storage.getFavourites()
-                            }
+            if (favourites.isEmpty()) {
+                Text("You have no favourite quotes yet.")
+            } else {
+                LazyColumn {
+                    items(favourites) { item ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            elevation = CardDefaults.cardElevation(2.dp)
                         ) {
-                            Text("Remove")
+                            Column(Modifier.padding(16.dp)) {
+                                Text(
+                                    item.quote,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    item.author,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(Modifier.height(12.dp))
+                                Button(
+                                    onClick = {
+                                        storage.removeFavourite(item)
+                                        favourites = storage.getFavourites()
+                                    }
+                                ) {
+                                    Text("Remove")
+                                }
+                            }
                         }
                     }
                 }
