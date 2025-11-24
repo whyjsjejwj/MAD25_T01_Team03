@@ -75,17 +75,6 @@ class MotivationFirestore {
             .addOnFailureListener { onComplete(false) }
     }
 
-    fun getSelectedIndex(uid: String, onResult: (Int?) -> Unit) {
-        userDoc(uid)
-            .collection("motivationMeta")
-            .document("config")
-            .get()
-            .addOnSuccessListener { doc ->
-                onResult(doc.getLong("selectedQuoteIndex")?.toInt())
-            }
-            .addOnFailureListener { onResult(null) }
-    }
-
     fun removeFavourite(uid: String, item: MotivationItem, onComplete: (Boolean) -> Unit = {}) {
         userDoc(uid)
             .collection("motivationFavourites")
