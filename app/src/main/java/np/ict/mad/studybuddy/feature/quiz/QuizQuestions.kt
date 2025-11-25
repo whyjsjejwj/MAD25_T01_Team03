@@ -1,0 +1,25 @@
+package np.ict.mad.studybuddy.feature.quiz
+
+data class QuizQuestionModel(
+    val question: String,
+    val options: List<String>,
+    val answer: Int
+)
+
+val sampleQuestions = listOf(
+    QuizQuestionModel(
+        "What is 2 + 2?",
+        listOf("1", "2", "3", "4"),
+        3
+    ),
+    QuizQuestionModel(
+        "Capital of France?",
+        listOf("Paris", "London", "Bangkok", "Tokyo"),
+        0
+    ),
+    QuizQuestionModel(
+        "Which planet is known as the Red Planet?",
+        listOf("Earth", "Mars", "Venus", "Jupiter"),
+        1
+    )
+)

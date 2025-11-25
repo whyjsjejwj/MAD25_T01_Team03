@@ -18,6 +18,8 @@ fun NotesScreen(
     username: String,       // Firebase UID
     onEdit: (Int) -> Unit,
     onOpenHome: () -> Unit,
+    onOpenTimer: () -> Unit,
+    onOpenQuiz : () -> Unit,
     onOpenMotivation: () -> Unit
 ) {
 
@@ -50,9 +52,10 @@ fun NotesScreen(
 
         bottomBar = {
             BottomNavBar(
-                selectedTab = BottomNavTab.NOTES,
+                selectedTab = BottomNavTab.HOME,
                 onHome = onOpenHome,
-                onOpenNotes = {},
+                onOpenQuiz = onOpenQuiz,
+                onOpenTimer = onOpenTimer,
                 onOpenMotivation = onOpenMotivation
             )
         }

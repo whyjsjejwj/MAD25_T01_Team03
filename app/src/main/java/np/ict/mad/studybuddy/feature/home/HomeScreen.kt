@@ -2,10 +2,13 @@ package np.ict.mad.studybuddy.feature.home
 
 import np.ict.mad.studybuddy.R
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,18 +16,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import np.ict.mad.studybuddy.core.storage.FirestoreNote
 import np.ict.mad.studybuddy.core.storage.NotesFirestore
 
 @Composable
 fun HomeScreen(
+    nav: NavController,
     uid: String,
     displayName: String,
     email: String,
-    onOpenNotes: () -> Unit,
-    onOpenMotivation: () -> Unit,
     onOpenProfile: () -> Unit,
-) {
+    onOpenTimer: () -> Unit,
+    onOpenQuiz: () -> Unit,
+    onOpenMotivation: () -> Unit
+)
+ {
+
     val notesDb = remember { NotesFirestore() }
     var notes by remember { mutableStateOf<List<FirestoreNote>>(emptyList()) }
 
@@ -32,14 +40,13 @@ fun HomeScreen(
         notes = notesDb.getNotes(uid)
     }
 
-    val latestNote = notes.lastOrNull()
-
     Scaffold(
         bottomBar = {
             BottomNavBar(
                 selectedTab = BottomNavTab.HOME,
                 onHome = {},
-                onOpenNotes = onOpenNotes,
+                onOpenQuiz = onOpenQuiz,
+                onOpenTimer = onOpenTimer,
                 onOpenMotivation = onOpenMotivation
             )
         }
@@ -52,7 +59,7 @@ fun HomeScreen(
                 .padding(16.dp)
         ) {
 
-            // ---------- TOP BAR ----------
+            // ---------------- TOP BAR ----------------
             TopBar(
                 displayName = displayName,
                 email = email,
@@ -61,7 +68,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // ---------- WELCOME ----------
+            // ---------------- WELCOME ----------------
             Text(
                 text = "Welcome back, $displayName!",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -70,13 +77,11 @@ fun HomeScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // ---------- TWO SUMMARY CARDS ----------
+            // ---------------- SUMMARY CARDS ----------------
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
-                // Study Streak
                 SummaryCard(
                     title = "Study Streak",
                     subtitle = "0 Days",
@@ -92,56 +97,83 @@ fun HomeScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // ---------- LATEST NOTE CARD ----------
-            Card(
+            // ===================================================
+            // ⭐ NOTES PREVIEW SECTION
+            // ===================================================
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(3.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp)
-                ) {
-                    Text(
-                        "Your Latest Note",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                Text(
+                    "Your Notes",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
 
-                    Spacer(Modifier.height(8.dp))
+                Row {
+                    // VIEW ALL NOTES BUTTON
+                    TextButton(
+                        onClick = {
+                            nav.navigate("notes/$uid/$displayName/$email")
+                        }
+                    ) {
+                        Text("View All")
+                    }
 
-                    if (latestNote == null) {
-                        Text(
-                            "No notes yet. Tap the Notes tab to create one.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        Text(
-                            latestNote.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                    // ADD NOTE BUTTON
+                    IconButton(
+                        onClick = {
+                            nav.navigate("notes/$uid/$displayName/$email")
+                        }
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Note")
+                    }
+                }
+            }
 
-                        Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
 
-                        Text(
-                            latestNote.content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 3,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+            // ---------------- NO NOTES ----------------
+            if (notes.isEmpty()) {
+                Text(
+                    "No notes yet. Tap + to create one.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                return@Column
+            }
 
-                        Spacer(Modifier.height(16.dp))
+            // ---------------- NOTES PREVIEW LIST ----------------
+            val previewNotes = notes.take(4)
 
-                        Button(
-                            onClick = onOpenNotes,
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text("View All")
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                previewNotes.forEach { note ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                nav.navigate("notes/$uid/$displayName/$email")
+                            },
+                        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                note.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Text(
+                                note.content,
+                                maxLines = 2,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
