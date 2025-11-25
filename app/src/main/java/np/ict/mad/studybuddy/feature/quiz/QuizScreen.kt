@@ -23,8 +23,9 @@ fun QuizScreen(
     var questionIndex by remember { mutableStateOf(0) }
     var score by remember { mutableStateOf(0) }
 
-    val questions = sampleQuestions
-    val current = questions.getOrNull(questionIndex)
+    var selectedQuestions by remember { mutableStateOf(listOf<QuizQuestionModel>()) }
+    /*val questions = sampleQuestions*/
+    val current = selectedQuestions.getOrNull(questionIndex)
 
     Scaffold(
         bottomBar = {
@@ -59,6 +60,7 @@ fun QuizScreen(
                     Button(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = {
+                            selectedQuestions = sampleQuestions.shuffled().take(3)
                             stage = "question"
                             questionIndex = 0
                             score = 0
@@ -75,7 +77,7 @@ fun QuizScreen(
                     if (current != null) {
 
                         Text(
-                            "Question ${questionIndex + 1} of ${questions.size}",
+                            "Question ${questionIndex + 1} of ${selectedQuestions.size}",
                             style = MaterialTheme.typography.titleLarge
                         )
                         Spacer(Modifier.height(16.dp))
@@ -92,7 +94,7 @@ fun QuizScreen(
                                 onClick = {
                                     if (index == current.answer) score++
 
-                                    if (questionIndex + 1 < questions.size) {
+                                    if (questionIndex + 1 < selectedQuestions.size) {
                                         questionIndex++
                                     } else {
                                         stage = "result"
@@ -113,7 +115,7 @@ fun QuizScreen(
                     Spacer(Modifier.height(24.dp))
 
                     Text(
-                        "Your Score: $score / ${questions.size}",
+                        "Your Score: $score / ${selectedQuestions.size}",
                         style = MaterialTheme.typography.titleLarge
                     )
 

@@ -21,5 +21,15 @@ val sampleQuestions = listOf(
         "Which planet is known as the Red Planet?",
         listOf("Earth", "Mars", "Venus", "Jupiter"),
         1
+    ),
+    QuizQuestionModel(
+        "What is it called when plants take in oxygen and give out carbon dioxide?",
+        listOf("Photosynthesis", "Respiration", "Breathing", "Vapourising"),
+        0
+    ),
+    QuizQuestionModel(
+        "What is the probability of selecting a red ball when there are 2 blue and 3 red balls in a bag?",
+        listOf("20%", "40%", "60%", "80%"),
+        2
     )
 )
