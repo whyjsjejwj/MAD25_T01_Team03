@@ -1,7 +1,6 @@
 package np.ict.mad.studybuddy.feature.home
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.School

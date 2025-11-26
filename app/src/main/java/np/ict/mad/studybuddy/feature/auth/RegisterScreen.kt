@@ -24,19 +24,24 @@ import np.ict.mad.studybuddy.R
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,
-    onBackToLogin: () -> Unit
+    onRegisterSuccess: () -> Unit, // called when registration completes (go back to Login)
+    onBackToLogin: () -> Unit      // navigate back to Login screen
 ) {
+
+    // Firebase instances for auth and saving profile
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
 
+    // Form input states (saved across rotation)
     var email by rememberSaveable { mutableStateOf("") }
     var displayName by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
 
+    // Toggles for showing / hiding passwords
     var showPassword by rememberSaveable { mutableStateOf(false) }
     var showConfirmPassword by rememberSaveable { mutableStateOf(false) }
+
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var loading by rememberSaveable { mutableStateOf(false) }
 
@@ -53,6 +58,7 @@ fun RegisterScreen(
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
+        // Card container for the registration form
         Card(
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(8.dp),
@@ -63,7 +69,7 @@ fun RegisterScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // 🔥 Logo (added)
+
                 Image(
                     painter = painterResource(id = R.drawable.studybuddylogo_cropped),
                     contentDescription = "StudyBuddy Logo",
@@ -75,7 +81,7 @@ fun RegisterScreen(
                 Text("Create Account", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(16.dp))
 
-                // EMAIL
+                // Email
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it; error = null },
@@ -90,7 +96,7 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // DISPLAY NAME
+                // Display name
                 OutlinedTextField(
                     value = displayName,
                     onValueChange = { displayName = it; error = null },
@@ -101,7 +107,7 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // PASSWORD
+                // Password
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it; error = null },
@@ -109,6 +115,7 @@ fun RegisterScreen(
                     singleLine = true,
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
+                        // Toggle between show/hide confirm password
                         TextButton(onClick = { showPassword = !showPassword }) {
                             Text(if (showPassword) "Hide" else "Show")
                         }
@@ -118,7 +125,7 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // CONFIRM PASSWORD
+                // Confirm password
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it; error = null },
@@ -135,7 +142,7 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                // ERROR TEXT
+                // Error text
                 if (error != null) {
                     Text(
                         error!!,
@@ -147,9 +154,10 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // REGISTER BUTTON
+                // Register button
                 Button(
                     onClick = {
+                        // Basic validation for empty fields
                         if (email.isBlank() || displayName.isBlank() ||
                             password.isBlank() || confirmPassword.isBlank()
                         ) {
@@ -157,6 +165,7 @@ fun RegisterScreen(
                             return@Button
                         }
 
+                        // Check both passwords match
                         if (password != confirmPassword) {
                             error = "Passwords do not match."
                             return@Button
@@ -211,6 +220,7 @@ fun RegisterScreen(
         }
     }
 
+    // Simple loading indicator when registration is in progress
     if (loading) {
         CircularProgressIndicator()
     }

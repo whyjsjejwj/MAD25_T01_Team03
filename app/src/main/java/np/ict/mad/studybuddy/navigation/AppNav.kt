@@ -54,7 +54,6 @@ fun AppNav() {
                 loginPrefs = loginPrefs,
                 onLoginSuccess = { uid, displayName ->
 
-                    // 🔥 FIXED: Get email from Firebase (NOT from savedEmail)
                     val email = FirebaseAuth.getInstance().currentUser?.email ?: ""
 
                     nav.navigate("home/$uid/$displayName/$email") {
