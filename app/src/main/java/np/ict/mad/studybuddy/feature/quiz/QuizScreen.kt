@@ -1,5 +1,6 @@
 package np.ict.mad.studybuddy.feature.quiz
 
+import android.graphics.Color.red
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,7 +20,10 @@ fun QuizScreen(
     onOpenMotivation: () -> Unit,
     onOpenQuiz: () -> Unit,
 ) {
+    val quizDb = remember { QuizStorage() }
+
     var stage by remember { mutableStateOf("home") }
+    var loading by remember { mutableStateOf(false) }
     var questionIndex by remember { mutableStateOf(0) }
     var score by remember { mutableStateOf(0) }
 
@@ -44,6 +48,11 @@ fun QuizScreen(
                 .padding(padding)
                 .padding(24.dp)
         ) {
+            if (loading){
+                CircularProgressIndicator()
+                Spacer(Modifier.height(12.dp))
+                return@Column
+            }
 
             when (stage) {
 
@@ -53,20 +62,98 @@ fun QuizScreen(
                 "home" -> {
                     Text("Quiz Zone", style = MaterialTheme.typography.headlineLarge)
                     Spacer(Modifier.height(16.dp))
-                    Text("Test your knowledge now!", style = MaterialTheme.typography.bodyLarge)
+                    Text("Choose a quiz category.", style = MaterialTheme.typography.bodyLarge)
 
                     Spacer(Modifier.height(32.dp))
 
                     Button(
                         modifier = Modifier.fillMaxWidth(),
+                        onClick = { stage = "category" }
+                    ) {
+                        Text("Start")
+                    }
+                        /*modifier = Modifier.fillMaxWidth(),
                         onClick = {
                             selectedQuestions = sampleQuestions.shuffled().take(3)
                             stage = "question"
                             questionIndex = 0
                             score = 0
+                            /*quizDb.getQuizQuestions { questionsFromDb ->
+                                selectedQuestions = questionsFromDb.shuffled().take(3)
+                                stage = "question"
+                                questionIndex = 0
+                                score = 0*/
                         }
                     ) {
                         Text("Start Quiz")
+                    }*/
+                }
+                //------------------------------------------------
+                // CATEGORY SELECTION PAGE
+                //------------------------------------------------
+                "category" -> {
+                    Text("Choose Category", style = MaterialTheme.typography.headlineLarge)
+                    Spacer(Modifier.height(24.dp))
+
+                    fun loadCategory(subject: String?) {
+                        loading = true
+                        if (subject == null) {
+                            // Load ALL questions
+                            quizDb.getAllQuestions { list ->
+                                selectedQuestions = list.shuffled().take(3)
+                                loading = false
+                                stage = "question"
+                                questionIndex = 0
+                                score = 0
+                            }
+                        } else {
+                            quizDb.getQuestions(subject) { list ->
+                                selectedQuestions = list.shuffled().take(3)
+                                loading = false
+                                stage = "question"
+                                questionIndex = 0
+                                score = 0
+                            }
+                        }
+                    }
+
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Biology
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { loadCategory("math") }
+                    ) { Text("Math") }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { loadCategory("biology") }
+                    ) { Text("Biology") }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { loadCategory("geography") }
+                    ) { Text("Geography") }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { loadCategory(null) }
+                    ) { Text("Mixed") }
+
+                    Spacer(Modifier.height(30.dp))
+
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { stage = "home" },
+                    ) {
+                        Text("Back")
                     }
                 }
 
