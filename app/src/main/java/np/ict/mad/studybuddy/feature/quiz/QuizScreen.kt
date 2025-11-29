@@ -1,12 +1,16 @@
 package np.ict.mad.studybuddy.feature.quiz
 
+import android.R
 import android.graphics.Color.red
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Button
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import np.ict.mad.studybuddy.feature.home.BottomNavBar
 import np.ict.mad.studybuddy.feature.home.BottomNavTab
 
@@ -43,15 +47,18 @@ fun QuizScreen(
         }
     ) { padding ->
 
-        Column(
+        Box(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(padding)
                 .padding(24.dp)
         ) {
             if (loading){
-                CircularProgressIndicator()
-                Spacer(Modifier.height(12.dp))
-                return@Column
+                // Center the loading indicator
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                return@Box
             }
 
             when (stage) {
@@ -60,40 +67,28 @@ fun QuizScreen(
                 // QUIZ HOME PAGE
                 // -------------------------
                 "home" -> {
-                    Text("Quiz Zone", style = MaterialTheme.typography.headlineLarge)
-                    Spacer(Modifier.height(16.dp))
-                    Text("Choose a quiz category.", style = MaterialTheme.typography.bodyLarge)
-
-                    Spacer(Modifier.height(32.dp))
-
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { stage = "category" }
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("Start")
-                    }
-                        /*modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            selectedQuestions = sampleQuestions.shuffled().take(3)
-                            stage = "question"
-                            questionIndex = 0
-                            score = 0
-                            /*quizDb.getQuizQuestions { questionsFromDb ->
-                                selectedQuestions = questionsFromDb.shuffled().take(3)
-                                stage = "question"
-                                questionIndex = 0
-                                score = 0*/
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Quiz Zone", style = MaterialTheme.typography.headlineLarge)
+                            Spacer(Modifier.height(16.dp))
+                            Text("Choose a quiz category.", style = MaterialTheme.typography.bodyLarge)
+                            Spacer(Modifier.height(32.dp))
+                            Button(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { stage = "category" }
+                            ) {
+                                Text("Start")
+                            }
                         }
-                    ) {
-                        Text("Start Quiz")
-                    }*/
+                    }
                 }
                 //------------------------------------------------
                 // CATEGORY SELECTION PAGE
                 //------------------------------------------------
                 "category" -> {
-                    Text("Choose Category", style = MaterialTheme.typography.headlineLarge)
-                    Spacer(Modifier.height(24.dp))
 
                     fun loadCategory(subject: String?) {
                         loading = true
@@ -118,42 +113,33 @@ fun QuizScreen(
                     }
 
 
-                    Spacer(Modifier.height(12.dp))
-
-                    // Biology
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { loadCategory("math") }
-                    ) { Text("Math") }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { loadCategory("biology") }
-                    ) { Text("Biology") }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { loadCategory("geography") }
-                    ) { Text("Geography") }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { loadCategory(null) }
-                    ) { Text("Mixed") }
-
-                    Spacer(Modifier.height(30.dp))
-
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { stage = "home" },
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("Back")
+                        Text("Choose Category", style = MaterialTheme.typography.headlineLarge)
+
+                        Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory("math") }) {
+                            Text("Math")
+                        }
+
+                        Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory("biology") }) {
+                            Text("Biology")
+                        }
+
+                        Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory("geography") }) {
+                            Text("Geography")
+                        }
+
+                        Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory(null) }) {
+                            Text("Mixed")
+                        }
+
+                        Spacer(Modifier.height(20.dp))
+
+                        Button(modifier = Modifier.fillMaxWidth(), onClick = { stage = "home" }) {
+                            Text("Back")
+                        }
                     }
                 }
 
@@ -163,32 +149,37 @@ fun QuizScreen(
                 "question" -> {
                     if (current != null) {
 
-                        Text(
-                            "Question ${questionIndex + 1} of ${selectedQuestions.size}",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Spacer(Modifier.height(16.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                "Question ${questionIndex + 1} of ${selectedQuestions.size}",
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            Text(current.question, style = MaterialTheme.typography.bodyLarge)
 
-                        Text(current.question, style = MaterialTheme.typography.bodyLarge)
-                        Spacer(Modifier.height(24.dp))
-
-                        current.options.forEachIndexed { index, option ->
-
-                            Button(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                onClick = {
-                                    if (index == current.answer) score++
-
-                                    if (questionIndex + 1 < selectedQuestions.size) {
-                                        questionIndex++
-                                    } else {
-                                        stage = "result"
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                current.options.forEachIndexed { index, option ->
+                                    Button(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = {
+                                            if (index == current.answer) score++
+                                            if (questionIndex + 1 < selectedQuestions.size) {
+                                                questionIndex++
+                                            } else {
+                                                stage = "result"
+                                            }
+                                        }
+                                    ) {
+                                        Text(option)
                                     }
                                 }
-                            ) {
-                                Text(option)
                             }
                         }
                     }
@@ -198,30 +189,55 @@ fun QuizScreen(
                 // RESULT PAGE
                 // -------------------------
                 "result" -> {
-                    Text("Quiz Completed!", style = MaterialTheme.typography.headlineLarge)
-                    Spacer(Modifier.height(24.dp))
-
-                    Text(
-                        "Your Score: $score / ${selectedQuestions.size}",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-                    Spacer(Modifier.height(32.dp))
-
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { stage = "home" }
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("Restart Quiz")
-                    }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            val resultMessage: String
+                            val resultColor: Color
 
-                    Spacer(Modifier.height(16.dp))
+                            when {
+                                score == selectedQuestions.size -> {
+                                    // Full marks
+                                    resultMessage = "Congratulations! You aced this!"
+                                    resultColor = Color(0xFF4CAF50) // Green
+                                }
+                                score >= selectedQuestions.size / 2.0 -> {
+                                    // Passed but not full marks
+                                    resultMessage = "Keep trying, you've got this!"
+                                    resultColor = Color(0xFF4CAF50)
+                                }
+                                else -> {
+                                    // Failed
+                                    resultMessage = "Try harder next time"
+                                    resultColor = Color.Red
+                                }
+                            }
+                            Text("Quiz Completed!", style = MaterialTheme.typography.headlineLarge)
+                            Text(
+                                "Your Score: $score / ${selectedQuestions.size}",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = resultColor
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                resultMessage,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = resultColor
+                            )
 
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = onOpenHome
-                    ) {
-                        Text("Return to Home")
+                            Button(modifier = Modifier.fillMaxWidth(), onClick = { stage = "home" }) {
+                                Text("Restart Quiz")
+                            }
+
+                            Button(modifier = Modifier.fillMaxWidth(), onClick = onOpenHome) {
+                                Text("Return to Home")
+                            }
+                        }
                     }
                 }
             }
