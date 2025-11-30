@@ -10,9 +10,6 @@ class MotivationFirestore {
     private fun userDoc(uid: String) =
         db.collection("users").document(uid)
 
-    // -----------------------------
-    // FAVOURITES
-    // -----------------------------
     fun addFavourite(
         uid: String,
         item: MotivationItem,

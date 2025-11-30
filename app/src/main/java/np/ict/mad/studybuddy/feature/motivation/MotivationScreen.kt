@@ -24,8 +24,6 @@ import np.ict.mad.studybuddy.feature.home.BottomNavTab
 @Composable
 fun MotivationScreen(
     uid: String,
-    displayName: String,
-    email: String,
     onOpenHome: () -> Unit,
     onOpenTimer: () -> Unit,
     onOpenQuiz: () -> Unit,
