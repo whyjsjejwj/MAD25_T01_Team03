@@ -7,12 +7,11 @@ data class QuizQuestionModel(
     val subject: String = ""
 )
 
-/*data class QuizQuestionModel(
+data class WrongAnswers(
     val question: String,
-    val options: List<String> = emptyList(),
-    val answer: Int=0,
-    val category: String = ""
-)*/
+    val correctAnswer: String,
+    val chosenAnswer: String
+)
 
 val sampleQuestions = listOf(
     QuizQuestionModel(
