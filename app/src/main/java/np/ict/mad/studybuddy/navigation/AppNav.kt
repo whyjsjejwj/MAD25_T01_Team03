@@ -217,8 +217,6 @@ fun AppNav() {
 
             MotivationScreen(
                 uid = uid,
-                displayName = displayName,
-                email = email,
                 onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
                 onOpenTimer = {},
                 onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
