@@ -20,6 +20,8 @@ import np.ict.mad.studybuddy.feature.notes.EditNoteScreen
 import np.ict.mad.studybuddy.feature.motivation.MotivationScreen
 import np.ict.mad.studybuddy.feature.motivation.FavouriteScreen
 import np.ict.mad.studybuddy.feature.quiz.QuizScreen
+import np.ict.mad.studybuddy.feature.timer.TimerScreen
+import np.ict.mad.studybuddy.feature.timer.TimerViewModel
 
 @Composable
 fun AppNav() {
@@ -250,7 +252,16 @@ fun AppNav() {
             )
         }
 // Timer Screen
-    
+        val nav = nav
+        val timerViewModel = TimerViewModel()
+
+        composable("timer") {
+            TimerScreen(
+                nav = nav,
+                viewModel = timerViewModel
+            )
+        }
+
 
 
 
