@@ -18,7 +18,8 @@ fun FavouriteScreen(
     displayName: String,
     email: String,
     onOpenHome: () -> Unit,
-    onOpenNotes: () -> Unit,
+    onOpenTimer: () -> Unit,
+    onOpenQuiz: () -> Unit,
     onOpenMotivation: () -> Unit
 ) {
     val motivationDb = remember { MotivationFirestore() }
@@ -40,7 +41,8 @@ fun FavouriteScreen(
             BottomNavBar(
                 selectedTab = BottomNavTab.MOTIVATION,
                 onHome = onOpenHome,
-                onOpenNotes = onOpenNotes,
+                onOpenTimer = onOpenTimer,
+                onOpenQuiz = onOpenQuiz,
                 onOpenMotivation = onOpenMotivation
             )
         }

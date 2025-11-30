@@ -19,6 +19,9 @@ import np.ict.mad.studybuddy.feature.notes.NotesScreen
 import np.ict.mad.studybuddy.feature.notes.EditNoteScreen
 import np.ict.mad.studybuddy.feature.motivation.MotivationScreen
 import np.ict.mad.studybuddy.feature.motivation.FavouriteScreen
+import np.ict.mad.studybuddy.feature.quiz.QuizScreen
+import np.ict.mad.studybuddy.feature.timer.TimerScreen
+import np.ict.mad.studybuddy.feature.timer.TimerViewModel
 
 @Composable
 fun AppNav() {
@@ -53,7 +56,6 @@ fun AppNav() {
                 loginPrefs = loginPrefs,
                 onLoginSuccess = { uid, displayName ->
 
-                    // 🔥 FIXED: Get email from Firebase (NOT from savedEmail)
                     val email = FirebaseAuth.getInstance().currentUser?.email ?: ""
 
                     nav.navigate("home/$uid/$displayName/$email") {
@@ -92,15 +94,17 @@ fun AppNav() {
             val email = backStackEntry.arguments!!.getString("email")!!
 
             HomeScreen(
+                nav = nav,
                 uid = uid,
                 displayName = displayName,
                 email = email,
-                onOpenProfile = {
-                    nav.navigate("profile/$uid/$displayName/$email")
-                },
-                onOpenNotes = { nav.navigate("notes/$uid/$displayName/$email") },
+                onOpenProfile = { nav.navigate("profile/$uid/$displayName/$email") },
+                onOpenTimer = {  },
+                onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
                 onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
             )
+
+
         }
 
         // NOTES SCREEN
@@ -121,6 +125,8 @@ fun AppNav() {
                 username = uid,
                 onEdit = { noteId -> nav.navigate("editNote/$uid/$noteId") },
                 onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
+                onOpenTimer = {  },
+                onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
                 onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
             )
         }
@@ -169,6 +175,31 @@ fun AppNav() {
                 }
             )
         }
+        // QUIZ SCREEN
+        composable(
+            route = "quiz/{uid}/{displayName}/{email}",
+            arguments = listOf(
+                navArgument("uid") { type = NavType.StringType },
+                navArgument("displayName") { type = NavType.StringType },
+                navArgument("email") { type = NavType.StringType }
+            )
+        ) { backStack ->
+
+            val uid = backStack.arguments!!.getString("uid")!!
+            val displayName = backStack.arguments!!.getString("displayName")!!
+            val email = backStack.arguments!!.getString("email")!!
+
+            QuizScreen(
+                uid = uid,
+                displayName = displayName,
+                email = email,
+                onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
+                onOpenTimer = { },
+                onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") },
+                onOpenQuiz = { /* already here */ }
+            )
+        }
+
 
         // MOTIVATION SCREEN
         composable(
@@ -189,7 +220,8 @@ fun AppNav() {
                 displayName = displayName,
                 email = email,
                 onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
-                onOpenNotes = { nav.navigate("notes/$uid/$displayName/$email") },
+                onOpenTimer = {},
+                onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
                 onOpenMotivation = { /* already here, do nothing */ },
                 onOpenFavourites = { nav.navigate("favourites/$uid/$displayName/$email") }
             )
@@ -214,10 +246,23 @@ fun AppNav() {
                 displayName = displayName,
                 email = email,
                 onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
-                onOpenNotes = { nav.navigate("notes/$uid/$displayName/$email") },
+                onOpenTimer = {},
+                onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
                 onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
             )
         }
+// Timer Screen
+        val nav = nav
+        val timerViewModel = TimerViewModel()
+
+        composable("timer") {
+            TimerScreen(
+                nav = nav,
+                viewModel = timerViewModel
+            )
+        }
+
+
 
 
         composable("forgotPassword") {

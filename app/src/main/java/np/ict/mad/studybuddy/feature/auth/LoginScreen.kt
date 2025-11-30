@@ -28,15 +28,22 @@ import np.ict.mad.studybuddy.R
 
 @Composable
 fun LoginScreen(
-    loginPrefs: LoginPreferences,
-    onLoginSuccess: (String, String) -> Unit,
-    onNavigateRegister: () -> Unit,
-    onNavigateForgotPassword: () -> Unit
+    loginPrefs: LoginPreferences,                   // used to save "Remember me" data
+    onLoginSuccess: (String, String) -> Unit,       //navigate to home after login
+    onNavigateRegister: () -> Unit,                 // go to Register page
+    onNavigateForgotPassword: () -> Unit            // go to forgot password page
 ) {
+
+    // FirebaseAuth is Firebase's built-in login system. I must get an instance of it
+    // using getInstance() before I can call any authentication functions such as
+    // signInWithEmailAndPassword or createUserWithEmailAndPassword. Without this
+    // instance, the app cannot log in users or access their UID.
     val auth = remember { FirebaseAuth.getInstance() }
     val firestore = remember { FirebaseFirestore.getInstance() }
     val scope = rememberCoroutineScope()
 
+    // User input fields + UI states
+    // rememberSaveable keeps the values if screen rotates
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var rememberMe by rememberSaveable { mutableStateOf(false) }
@@ -76,13 +83,13 @@ fun LoginScreen(
                 // Email field
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it; error = null },
+                    onValueChange = { email = it; error = null },  // update input + clear old error
                     label = { Text("Email Address") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(
-                        imeAction = ImeAction.Next,
-                        keyboardType = KeyboardType.Email
+                        imeAction = ImeAction.Next, // shows “Next” button on keyboard
+                        keyboardType = KeyboardType.Email // email friendly keyboard allows @
                     )
                 )
 
@@ -94,17 +101,19 @@ fun LoginScreen(
                     onValueChange = { password = it; error = null },
                     label = { Text("Password") },
                     singleLine = true,
-                    visualTransformation =
+                    visualTransformation =        // hide or show password
                         if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
+                    trailingIcon = {              // "Show / Hide" toggle button
                         TextButton(onClick = { showPassword = !showPassword }) {
                             Text(if (showPassword) "Hide" else "Show")
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(
-                        imeAction = ImeAction.Done,
-                        keyboardType = KeyboardType.Password
+                        imeAction = ImeAction.Done, // Finish entering password, good practice
+                        keyboardType = KeyboardType.Password //password optimised keyboard
+                                                             // no auto correct etc
+
                     )
                 )
 
@@ -116,6 +125,8 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
+                    // Checkbox for “Remember Me"
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = rememberMe,
@@ -124,6 +135,7 @@ fun LoginScreen(
                         Text("Remember Me")
                     }
 
+                    // Clickable text for forgot password
                     Text(
                         text = "Forgot Password?",
                         modifier = Modifier.clickable { onNavigateForgotPassword() },
@@ -148,14 +160,17 @@ fun LoginScreen(
                 // LOGIN BUTTON
                 Button(
                     onClick = {
+
+                        // Basic validation
                         if (email.isEmpty() || password.isEmpty()) {
                             error = "Please fill in all fields."
                             return@Button
                         }
 
+                        // Firebase login using email & password
                         auth.signInWithEmailAndPassword(email, password)
                             .addOnSuccessListener { result ->
-                                val uid = result.user!!.uid
+                                val uid = result.user!!.uid   // Firebase user ID
 
                                 firestore.collection("users")
                                     .document(uid)
@@ -163,12 +178,14 @@ fun LoginScreen(
                                     .addOnSuccessListener { doc ->
                                         val displayName = doc.getString("displayName") ?: ""
 
+                                        // Save login details if user ticked Remember Me
                                         scope.launch {
                                             if (rememberMe) {
                                                 loginPrefs.saveLogin(uid, email, displayName)
                                             }
                                         }
 
+                                        // Navigate to Home using callback
                                         onLoginSuccess(uid, displayName)
                                     }
                                     .addOnFailureListener {

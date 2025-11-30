@@ -27,7 +27,8 @@ fun MotivationScreen(
     displayName: String,
     email: String,
     onOpenHome: () -> Unit,
-    onOpenNotes: () -> Unit,
+    onOpenTimer: () -> Unit,
+    onOpenQuiz: () -> Unit,
     onOpenMotivation: () -> Unit,
     onOpenFavourites: () -> Unit
 ) {
@@ -80,7 +81,8 @@ fun MotivationScreen(
             BottomNavBar(
                 selectedTab = BottomNavTab.MOTIVATION,
                 onHome = onOpenHome,
-                onOpenNotes = onOpenNotes,
+                onOpenQuiz = onOpenQuiz,
+                onOpenTimer = onOpenTimer,
                 onOpenMotivation = onOpenMotivation
             )
         }

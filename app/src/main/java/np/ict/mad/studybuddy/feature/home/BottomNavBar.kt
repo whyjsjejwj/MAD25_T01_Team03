@@ -1,21 +1,22 @@
 package np.ict.mad.studybuddy.feature.home
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-enum class BottomNavTab { HOME, NOTES, QUIZ, MOTIVATION }
+enum class BottomNavTab { HOME, TIMER, QUIZ, MOTIVATION }
 
 @Composable
 fun BottomNavBar(
     selectedTab: BottomNavTab,
     onHome: () -> Unit,
-    onOpenNotes: () -> Unit,
+    onOpenTimer: () -> Unit,
+    onOpenQuiz: () -> Unit,
     onOpenMotivation: () -> Unit
 ) {
     NavigationBar(containerColor = Color.White) {
@@ -27,14 +28,14 @@ fun BottomNavBar(
         )
 
         NavigationBarItem(
-            selected = selectedTab == BottomNavTab.NOTES,
-            onClick = onOpenNotes,
-            icon = { Icon(Icons.Default.Edit, contentDescription = "Notes") }
+            selected = selectedTab == BottomNavTab.TIMER,
+            onClick = onOpenTimer,
+            icon = { Icon(Icons.Default.Timer, contentDescription = "Study Timer") }
         )
 
         NavigationBarItem(
             selected = selectedTab == BottomNavTab.QUIZ,
-            onClick = { /* Not implemented */ },
+            onClick = onOpenQuiz,
             icon = { Icon(Icons.Default.School, contentDescription = "Quiz") }
         )
 
