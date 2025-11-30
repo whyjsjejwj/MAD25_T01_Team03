@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import np.ict.mad.studybuddy.core.storage.MotivationFirestore
 import np.ict.mad.studybuddy.core.storage.QuotesFirestore
 import np.ict.mad.studybuddy.feature.home.BottomNavBar
@@ -34,34 +33,38 @@ fun MotivationScreen(
 ) {
     val quotesDb = remember { QuotesFirestore() }
     val motivationDb = remember { MotivationFirestore() }
-    val scope = rememberCoroutineScope()
 
     var quotes by remember { mutableStateOf<List<MotivationItem>>(emptyList()) }
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
 
-    var loadingQuotes by remember { mutableStateOf(true) }
-    var saving by remember { mutableStateOf(false) }
+    // --- Daily Habit Checklist ---
+    val habits = listOf(
+        "Study at least 25 minutes",
+        "Review yesterday’s notes",
+        "Write 3 key points learned",
+        "Plan tomorrow’s task"
+    )
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    var habitStatus by remember {
+        mutableStateOf(habits.associateWith { false })
+    }
 
-    // ---------------------------
-    // STEP 1: Load quotes first
-    // ---------------------------
+    val completedHabits = habitStatus.values.count { it }
+    val totalHabits = habits.size
+
+    // --- Load Quote Data From Firebase ---
     LaunchedEffect(Unit) {
         quotesDb.getQuotes { list ->
             quotes = list.take(5)
-            loadingQuotes = false
-
-            // DO NOT auto-select saved index anymore
-            selectedIndex = null
+            selectedIndex = null   // DO NOT auto-select
         }
     }
-
 
     val selectedQuote = selectedIndex?.let { idx ->
         quotes.getOrNull(idx)
     }
 
+    // Background
     val gradient = Brush.verticalGradient(
         listOf(Color(0xFFFFFDF7), Color(0xFFFFF7E8))
     )
@@ -80,21 +83,8 @@ fun MotivationScreen(
                 onOpenNotes = onOpenNotes,
                 onOpenMotivation = onOpenMotivation
             )
-        },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { innerPadding ->
-
-        if (loadingQuotes) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Color(0xFFE7C980))
-            }
-            return@Scaffold
         }
+    ) { innerPadding ->
 
         Column(
             modifier = Modifier
@@ -106,179 +96,211 @@ fun MotivationScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // ====================================
-            // QUOTES SECTION
-            // ====================================
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(Color.White),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(4.dp)
-            ) {
-
-                Column(modifier = Modifier.padding(16.dp)) {
-
-                    Text(
-                        "Choose Your Quote of the Day",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF7A5633)
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
-                    quotes.forEachIndexed { index, item ->
-                        val isSelected = index == selectedIndex
-
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedIndex = index },
-                            colors = CardDefaults.cardColors(
-                                if (isSelected) Color(0xFFFFF4CE) else Color.White
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            border = if (isSelected)
-                                BorderStroke(2.dp, Color(0xFFC8A26A))
-                            else null,
-                            elevation = CardDefaults.cardElevation(
-                                if (isSelected) 4.dp else 1.dp
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    "\"${item.quote}\"",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = Color(0xFF4A3928)
-                                )
-                                Text(
-                                    item.author,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
+            QuoteSelectorCard(
+                quotes = quotes,
+                selectedIndex = selectedIndex,
+                onSelect = { selectedIndex = it },
+                selectedQuote = selectedQuote,
+                onSave = {
+                    if (selectedQuote != null && selectedIndex != null) {
+                        motivationDb.addFavourite(uid, selectedQuote)
+                        motivationDb.saveSelectedIndex(uid, selectedIndex!!)
                     }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    Text(
-                        "My Quote of the Day:",
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF7A5633)
-                    )
-
-                    if (selectedQuote != null) {
-                        Text(
-                            "\"${selectedQuote.quote}\"",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color(0xFF4A3928)
-                        )
-                    } else {
-                        Text(
-                            "Tap a quote above to choose your quote of the day.",
-                            color = Color.Gray
-                        )
+                },
+                onOpenFavourites = onOpenFavourites
+            )
+            DailyChecklistCard(
+                habits = habits,
+                habitStatus = habitStatus,
+                onHabitToggle = { habit ->
+                    habitStatus = habitStatus.toMutableMap().apply {
+                        this[habit] = !(this[habit] ?: false)
                     }
+                },
+                completedHabits = completedHabits,
+                totalHabits = totalHabits
+            )
+            FlashcardTipsSection()
+        }
+    }
+}
 
-                    Spacer(Modifier.height(16.dp))
+@Composable
+fun QuoteSelectorCard(
+    quotes: List<MotivationItem>,
+    selectedIndex: Int?,
+    onSelect: (Int) -> Unit,
+    selectedQuote: MotivationItem?,
+    onSave: () -> Unit,
+    onOpenFavourites: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(Color.White),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
 
-                    val hasSelection = selectedQuote != null
+        Column(modifier = Modifier.padding(16.dp)) {
 
-                    Button(
-                        onClick = {
-                            if (selectedQuote != null && selectedIndex != null) {
-                                motivationDb.addFavourite(uid, selectedQuote)
-                                motivationDb.saveSelectedIndex(uid, selectedIndex!!)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        enabled = hasSelection,
-                        shape = RoundedCornerShape(24.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor =
-                                if (hasSelection) Color(0xFFE7C15A)   // deeper warm yellow when active
-                                else Color(0xFFE7D9A8),               // pale disabled yellow
-                            contentColor = Color.White,
-                            disabledContainerColor = Color(0xFFEDE7C8),
-                            disabledContentColor = Color(0xFFB7A87A)
-                        )
-                    ) {
-                        Text("Save Selected Quote to Favourites")
-                    }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    OutlinedButton(
-                        onClick = onOpenFavourites,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("View Favourites", color = Color(0xFF7A5633))
-                    }
-                }
-            }
-
-            // ====================================
-            // STUDY TIPS
-            // ====================================
-            val studyTips = listOf(
-                "Use the Pomodoro technique: 25 minutes focus, 5 minutes break.",
-                "Summarise what you learned in your own words.",
-                "Test yourself instead of rereading notes.",
-                "Remove distractions while studying.",
-                "Plan tomorrow's study tasks at the end of each day."
+            Text(
+                "Choose Your Quote of the Day",
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF7A5633)
             )
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(Color.White),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(4.dp)
-            ) {
+            Spacer(Modifier.height(12.dp))
 
-                Column(modifier = Modifier.padding(16.dp)) {
+            quotes.forEachIndexed { index, item ->
+                val isSelected = index == selectedIndex
 
-                    Text(
-                        "Study Tips",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF7A5633)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(index) },
+                    colors = CardDefaults.cardColors(
+                        if (isSelected) Color(0xFFFFF4CE) else Color.White
+                    ),
+                    border = if (isSelected)
+                        BorderStroke(2.dp, Color(0xFFC8A26A))
+                    else null,
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(
+                        if (isSelected) 4.dp else 1.dp
                     )
-
-                    studyTips.forEach { tip ->
-                        Text("• $tip", color = Color(0xFF4A3928))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("\"${item.quote}\"", color = Color(0xFF4A3928))
+                        Text(item.author, color = Color.Gray)
                     }
                 }
             }
 
-            // ====================================
-            // HABITS
-            // ====================================
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(Color.White),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(4.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Build Consistent Study Habits",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF7A5633)
-                    )
+            Spacer(Modifier.height(12.dp))
 
-                    listOf(
-                        "Study at the same time daily.",
-                        "Set 1–3 realistic goals each session.",
-                        "Take short breaks instead of long ones.",
-                        "Review what you learned daily."
-                    ).forEach {
-                        Text("• $it", color = Color(0xFF4A3928))
-                    }
+            Button(
+                onClick = onSave,
+                enabled = selectedQuote != null,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor =
+                        if (selectedQuote != null) Color(0xFFE7C15A)
+                        else Color(0xFFE7D9A8),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Text("Save Selected Quote to Favourites")
+            }
+
+            OutlinedButton(
+                onClick = onOpenFavourites,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("View Favourites", color = Color(0xFF7A5633))
+            }
+        }
+    }
+}
+
+@Composable
+fun DailyChecklistCard(
+    habits: List<String>,
+    habitStatus: Map<String, Boolean>,
+    onHabitToggle: (String) -> Unit,
+    completedHabits: Int,
+    totalHabits: Int
+) {
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(Color.White),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            Text(
+                "Daily Study Checklist",
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF7A5633)
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            // Progress bar
+            LinearProgressIndicator(
+                progress = completedHabits / totalHabits.toFloat(),
+                color = Color(0xFFE7C15A),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Text(
+                "$completedHabits / $totalHabits completed",
+                color = Color(0xFF4A3928)
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Checkbox list
+            habits.forEach { habit ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onHabitToggle(habit) }
+                ) {
+                    Checkbox(
+                        checked = habitStatus[habit] ?: false,
+                        onCheckedChange = { onHabitToggle(habit) }
+                    )
+                    Text(habit, color = Color(0xFF4A3928))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun FlashcardTipsSection() {
+
+    val flashcards = listOf(
+        "Active Recall" to "Test yourself instead of rereading notes.",
+        "Pomodoro Technique" to "25 minutes focus, 5 minutes break.",
+        "Spaced Repetition" to "Review content on increasing intervals.",
+        "Avoid Distractions" to "Put your phone away while studying."
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+        flashcards.forEach { (title, desc) ->
+            FlashcardTip(title, desc)
+        }
+    }
+}
+
+@Composable
+fun FlashcardTip(title: String, desc: String) {
+
+    var flipped by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { flipped = !flipped },
+        colors = CardDefaults.cardColors(Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(3.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            if (!flipped) {
+                Text(title, fontWeight = FontWeight.Bold, color = Color(0xFF7A5633))
+                Text("Tap to reveal →", color = Color.Gray)
+            } else {
+                Text(desc, color = Color(0xFF4A3928))
+                Text("Tap to hide ↑", color = Color.Gray)
             }
         }
     }
