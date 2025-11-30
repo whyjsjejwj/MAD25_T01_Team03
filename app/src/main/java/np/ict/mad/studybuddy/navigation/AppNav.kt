@@ -249,6 +249,9 @@ fun AppNav() {
                 onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
             )
         }
+// Timer Screen
+    
+
 
 
         composable("forgotPassword") {
