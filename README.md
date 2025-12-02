@@ -74,13 +74,14 @@ A clean interface that reduces cognitive load and improves navigation for younge
 Each module (Notes, Timer, Motivation Hub, Quiz Zone) is independently built for scalability and clarity.
 
 ### 3. Offline-First Architecture  
-Core features such as notes, quotes, and the Pomodoro timer work offline. Data is saved locally using **Room Database**.
+Core features such as **Notes, Motivational quotes, and Quizzes** are now stored using Firebase Firestore, ensuring secure cloud backup and multi-device accessibility.
+The **Pomodoro timer** will have its data stored offline in Share Preference.
 
 ### 4. Consistency & Familiarity  
 Design inspiration taken from Notion, Quizlet, and Forest to maintain familiarity while offering unique features.
 
 ### 5. Expandability for Stage 2  
-The structure allows future enhancements such as cloud sync, analytics, and notification-based reminders.
+The structure allows future enhancements such as cloud sync, analytics, and notification-based reminders. (Add more information)
 
 ---
 
@@ -90,7 +91,6 @@ The structure allows future enhancements such as cloud sync, analytics, and noti
 - Handles user login and authentication  
 - CRUD operations for study notes  
 - Categorization by subject / module  
-- Implements Room for local persistence  
 
 ### **2. Motivation Hub** (By Fan Zhizhong)
 - Displays daily motivational quotes  
