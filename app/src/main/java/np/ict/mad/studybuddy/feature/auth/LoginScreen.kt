@@ -51,8 +51,12 @@ fun LoginScreen(
     var error by rememberSaveable { mutableStateOf<String?>(null) }
 
     val gradient = Brush.verticalGradient(
-        listOf(Color(0xFF4A90E2), Color(0xFF3A7BD5))
+        listOf(
+            Color(0xFFFFF4DB),
+            Color(0xFFF3D67C)
+        )
     )
+
 
     Box(
         modifier = Modifier

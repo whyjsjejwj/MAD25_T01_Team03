@@ -89,12 +89,17 @@ fun MotivationScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradient)
-                .padding(innerPadding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 20.dp
+                )
+                .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        )
+        {
 
             QuoteSelectorCard(
                 quotes = quotes,
