@@ -35,9 +35,14 @@ fun ProfileScreen(
     onChangePassword: () -> Unit = {}
 ) {
     val context = LocalContext.current
+
+    // using my LoginPreferences to read theme & maybe future profile data
     val prefs = remember { LoginPreferences(context) }
+
+    // coroutine scope tied to this screen (so it cancels when I leave)
     val scope = rememberCoroutineScope()
 
+    // reading the saved theme from DataStore (Flow -> UI updates automatically)
     val currentTheme by prefs.theme.collectAsState(initial = "system")
     var showThemeDialog by remember { mutableStateOf(false) }
 
@@ -47,6 +52,7 @@ fun ProfileScreen(
                 title = { Text("Profile") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
+                        // default back icon for going back to previous screen
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -62,7 +68,8 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // ---------------- AVATAR ---------------------
+            // Avatar
+            // generating initials from the display name (e.g. "John Doe" -> "JD")
             val initials = displayName
                 .split(" ")
                 .mapNotNull { it.firstOrNull()?.toString()?.uppercase() }
@@ -73,6 +80,7 @@ fun ProfileScreen(
                 modifier = Modifier
                     .size(110.dp)
                     .clip(CircleShape)
+                    // simple colored circle for avatar since I don't use image
                     .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
@@ -85,12 +93,13 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            // Displaying the user info that I passed into the screen
             Text(displayName, style = MaterialTheme.typography.headlineSmall)
             Text(email, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(Modifier.height(32.dp))
 
-            // ---------------- ACCOUNT SECTION ---------------------
+            //Account Section
             SettingsSectionTitle("Account")
 
             ProfileOption(
@@ -107,35 +116,36 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(32.dp))
 
-            // ---------------- APP SETTINGS ---------------------
+            //App settings
             SettingsSectionTitle("App Settings")
 
             ProfileOption(
                 icon = Icons.Default.Palette,
-                text = "Theme ($currentTheme)",
+                text = "Theme ($currentTheme)", // show the currently selected theme
                 onClick = { showThemeDialog = true }
             )
 
             ProfileOption(
                 icon = Icons.Default.Settings,
                 text = "General Settings",
-                onClick = {}
+                onClick = {} // haven't added anything here yet
             )
 
             Spacer(Modifier.height(32.dp))
 
-            // ---------------- LOGOUT ---------------------
+            //Log out
             ProfileOption(
                 icon = Icons.Default.Logout,
                 text = "Logout",
-                iconColor = Color.Red,
+                iconColor = Color.Red, // making logout red so it's obvious
                 textColor = Color.Red,
                 onClick = onLogout
             )
         }
     }
 
-    // ---------------- THEME DIALOG ---------------------
+    // Theme
+    // simple dialog that shows 3 theme choices (Light / Dark / System)
     if (showThemeDialog) {
         AlertDialog(
             onDismissRequest = { showThemeDialog = false },
@@ -143,6 +153,7 @@ fun ProfileScreen(
             text = {
                 Column {
 
+                    // each option updates DataStore through prefs.setTheme()
                     ThemeOption("Light", "light", currentTheme) {
                         scope.launch { prefs.setTheme("light") }
                         showThemeDialog = false
@@ -177,7 +188,7 @@ fun ThemeOption(label: String, value: String, selected: String, onSelect: () -> 
             .clickable(onClick = onSelect)
             .background(
                 if (selected == value)
-                    MaterialTheme.colorScheme.surfaceVariant
+                    MaterialTheme.colorScheme.surfaceVariant // highlight selected theme
                 else
                     Color.Transparent
             )
@@ -190,6 +201,7 @@ fun ThemeOption(label: String, value: String, selected: String, onSelect: () -> 
 
 @Composable
 fun SettingsSectionTitle(text: String) {
+    // styling for section title like "Account" or "App Settings"
     Text(
         text = text,
         style = MaterialTheme.typography.titleMedium,
@@ -202,6 +214,7 @@ fun SettingsSectionTitle(text: String) {
 
 @Composable
 fun ProfileOption(
+    //styling for the profile each item
     icon: Any,
     text: String,
     iconColor: Color = MaterialTheme.colorScheme.onSurface,
@@ -210,12 +223,13 @@ fun ProfileOption(
 ) {
     Column {
         Row(
+            //this whole Row is basically one "menu item" (like Edit Profile / Logout)
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(14.dp))
-                .clickable(onClick = onClick)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(vertical = 18.dp, horizontal = 16.dp),
+                .clickable(onClick = onClick) //the entire row is clickable
+                .background(MaterialTheme.colorScheme.surfaceVariant)  //background for the option
+                .padding(vertical = 18.dp, horizontal = 16.dp), //spacing inside the row
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -224,6 +238,8 @@ fun ProfileOption(
                 tint = iconColor
             )
             Spacer(modifier = Modifier.width(16.dp))
+
+            // the actual label of the option (e.g. "Edit Profile")
             Text(
                 text = text,
                 color = textColor,
@@ -231,6 +247,6 @@ fun ProfileOption(
             )
         }
 
-        Spacer(Modifier.height(14.dp)) // ⭐ Clean spacing between cards
+        Spacer(Modifier.height(14.dp)) //spacing between the menu items
     }
 }

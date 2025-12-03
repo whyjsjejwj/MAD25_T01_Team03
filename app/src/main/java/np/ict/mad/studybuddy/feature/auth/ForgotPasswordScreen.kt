@@ -22,12 +22,12 @@ import kotlinx.coroutines.launch
 fun ForgotPasswordScreen(
     onBackToLogin: () -> Unit
 ) {
-    val auth = FirebaseAuth.getInstance()
+    val auth = FirebaseAuth.getInstance() //firebase auth reference for sending reset email
 
     var email by rememberSaveable { mutableStateOf("") }
     var isLoading by rememberSaveable { mutableStateOf(false) }
 
-    // Snackbar
+    //Snackbar controls (state + coroutine to show messages)
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -44,6 +44,7 @@ fun ForgotPasswordScreen(
         contentAlignment = Alignment.Center
     ) {
 
+        //card that holds the form UI
         Card(
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(8.dp),
@@ -62,6 +63,7 @@ fun ForgotPasswordScreen(
 
                 Spacer(Modifier.height(16.dp))
 
+                //email input field
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -76,9 +78,10 @@ fun ForgotPasswordScreen(
 
                 Spacer(Modifier.height(20.dp))
 
-                // SEND BUTTON
+                //send reset email button
                 Button(
                     onClick = {
+                        //basic validation, email cannot be empty
                         if (email.isBlank()) {
                             scope.launch {
                                 snackbarHostState.showSnackbar("Please enter an email.")
@@ -88,6 +91,7 @@ fun ForgotPasswordScreen(
 
                         isLoading = true
 
+                        //firebase built-in method to send reset email
                         auth.sendPasswordResetEmail(email)
                             .addOnCompleteListener { task ->
                                 isLoading = false
@@ -108,14 +112,14 @@ fun ForgotPasswordScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    enabled = !isLoading
+                    enabled = !isLoading //disable button while loading
                 ) {
                     Text("Send Reset Email")
                 }
 
                 Spacer(Modifier.height(8.dp))
 
-                // Back to Login
+                //simple text button to return to the login page
                 TextButton(
                     onClick = onBackToLogin,
                 ) {
@@ -124,7 +128,8 @@ fun ForgotPasswordScreen(
             }
         }
 
-        // Snackbar Host
+        //This is where all snackbar messages will appear (bottom center).
+        //The snackbarHostState controls when to show which message.
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
