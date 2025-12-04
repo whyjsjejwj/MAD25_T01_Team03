@@ -109,7 +109,8 @@ fun LoginScreen(
                         if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {              // "Show / Hide" toggle button
                         TextButton(onClick = { showPassword = !showPassword }) {
-                            Text(if (showPassword) "Hide" else "Show")
+                            Text(if (showPassword) "Hide" else "Show",
+                                    color = Color(0xFF8C6F4A))
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -143,7 +144,7 @@ fun LoginScreen(
                     Text(
                         text = "Forgot Password?",
                         modifier = Modifier.clickable { onNavigateForgotPassword() },
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color(0xFF8C6F4A)
                     )
                 }
 
@@ -214,7 +215,7 @@ fun LoginScreen(
                     "Don't have an account? Register here",
                     modifier = Modifier.clickable { onNavigateRegister() },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = Color(0xFF8C6F4A)
                 )
             }
         }
