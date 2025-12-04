@@ -1,7 +1,6 @@
 package np.ict.mad.studybuddy.feature.quiz
 
-import android.R
-import android.graphics.Color.red
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
@@ -13,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Button
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.max
 import np.ict.mad.studybuddy.feature.home.BottomNavBar
 import np.ict.mad.studybuddy.feature.home.BottomNavTab
 
@@ -27,15 +25,26 @@ fun QuizScreen(
     onOpenMotivation: () -> Unit,
     onOpenQuiz: () -> Unit,
 ) {
+    // Firestore access class
     val quizDb = remember { QuizStorage() }
 
+    // Controls which part of the quiz the user is at (Home, Category, Results)
     var stage by remember { mutableStateOf("home") }
+
+    // Just shows the loading indicator when fetching from Firebase
     var loading by remember { mutableStateOf(false) }
+
+    // The question the user is currently at
     var questionIndex by remember { mutableStateOf(0) }
+
+    // Score user gets at the end of the quiz
     var score by remember { mutableStateOf(0) }
 
+    // List of questions selected from the Firebase
     var selectedQuestions by remember { mutableStateOf(listOf<QuizQuestionModel>()) } // questions selected for the quiz
+
     val current = selectedQuestions.getOrNull(questionIndex) // current question
+
     var wrongAnswers by remember { mutableStateOf(listOf<WrongAnswers>()) } // questions the user got wrong
 
     Scaffold(
@@ -58,7 +67,7 @@ fun QuizScreen(
         ) {
             // for loading and to show the loading icon
             if (loading){
-                // Center the loading indicator
+                // To make the loading indicator in the center
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
@@ -279,10 +288,11 @@ fun QuizScreen(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .heightIn(max = 300.dp)
+                                        .heightIn(max = 350.dp)
                                         .verticalScroll(scrollState),
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ){
+                                    // Looping through each wrong answer and display a card for each question gotten wrong
                                     wrongAnswers.forEach { w ->
                                         Card(
                                             modifier = Modifier
