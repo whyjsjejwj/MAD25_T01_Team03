@@ -41,6 +41,7 @@ fun HomeScreen(
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         bottomBar = {
             BottomNavBar(
                 selectedTab = BottomNavTab.HOME,
