@@ -81,33 +81,45 @@ The **Pomodoro timer** will have its data stored offline in Share Preference.
 Design inspiration taken from Notion, Quizlet, and Forest to maintain familiarity while offering unique features.
 
 ### 5. Expandability for Stage 2  
-The structure allows future enhancements such as cloud sync, analytics, and notification-based reminders. (Add more information)
+The current architecture is intentionally modular, allowing new features to be added without disrupting existing components. This enables future enhancements such as cloud synchronization, usage analytics, and notification-based reminders.
+
+Cloud Sync: Centralizing user data in Firebase allows notes, quiz progress, motivation preferences, and timer history to be accessed across multiple devices. This improves reliability and prevents data loss.
+
+Analytics & Insights: By tracking study duration, streaks, frequently used features, and quiz performance, the app can provide personalized recommendations to improve study habits.
+
+Smart Notifications: Reminder systems can encourage users to return to the app, complete study sessions, or review saved notes, supporting long-term engagement and consistency.
+
+Feature Scalability: Each module (Notes, Timer, Motivation Hub, Quiz Zone) is built as an independent component, making it easy to introduce new standalone features such as habit tracking, study streak achievements, or external API integrations without requiring major redesigns.
+
+This forward-thinking structure ensures StudyBuddy can grow into a more intelligent, personalized, and supportive study ecosystem over time.
 
 ---
 
 ## Feature Overview
 
 ### **1. Login + Notes Manager** (By Pey Zhi Xun)
-- Handles user login and authentication  
-- CRUD operations for study notes  
-- Categorization by subject / module  
+This feature allows users to create an account, log in securely, and manage their study notes in an organized manner. Students can create, edit, delete, and categorize notes by subject or module.
+
+Reason for implementation:
+Students often struggle with scattered or misplaced notes. A centralized note-taking system ensures all study materials stay accessible, structured, and backed up across devices through Firebase authentication.
 
 ### **2. Motivation Hub** (By Fan Zhizhong)
-- Displays daily motivational quotes  
-- Users can save favourite quotes to local storage  
-- Includes study tips  
-- May include background images for multimedia requirement  
+The Motivation Hub provides daily motivational quotes and study tips to help students build resilience and maintain consistent study habits. Users can save their favourite quotes for quick access, and background images help fulfil the multimedia requirement.
+
+Reason for implementation:
+Many students lose motivation easily, especially during stressful periods. Having a dedicated space that boosts morale helps reinforce positive study behaviour and makes the app more emotionally supportive — something most study apps overlook.
 
 ### **3. Study Timer (Pomodoro)** (By Arjun)
-- 25-minute focus cycles  
-- 5-minute rest cycles  
-- Simple animations and timer display  
-- Helps maintain consistent study habits  
+The Study Timer uses the Pomodoro technique, offering 25-minute focus sessions followed by short breaks. The timer includes simple animations and a clean UI to guide users through productive study cycles.
+
+Reason for implementation:
+Students often face difficulties maintaining focus. Pomodoro is a proven method for improving productivity and reducing burnout, making it a valuable feature for learners who need structure during their study sessions.
 
 ### **4. Quiz Zone** (By Daniel)
-- Subject-based multiple-choice quizzes  
-- Local JSON / database question storage  
-- Displays scores and correctness for self-assessment  
+The Quiz Zone presents subject-based multiple-choice questions stored on Firebase, allowing students to practise and reinforce their understanding. It displays scores, correctness, and feedback for self-assessment.
+
+Reason for implementation:
+Self-testing is one of the most effective ways to strengthen long-term memory. This feature helps students identify knowledge gaps and revise more efficiently, making StudyBuddy not just a productivity tool but a genuine learning companion.
 
 ---
 
@@ -122,6 +134,125 @@ The structure allows future enhancements such as cloud sync, analytics, and noti
 
 ---
 
+## Competitor Analysis
+StudyBuddy operates in a competitive landscape of study tools, planners, and habit-building apps.  
+To refine our value proposition, we analysed three key competitors: **StudySmarter**, **Classify**, and **Forest**.  
+
+---
+
+### **Competitor Overview**
+
+#### **1. StudySmarter**
+A popular learning platform offering student-generated flashcards, revision tools, and study analytics.
+
+#### **2. Classify (Student Planner App)**
+A lightweight planner for schedules and homework tracking, mainly targeted at secondary/tertiary students.
+
+#### **3. Forest**
+A gamified focus timer designed to reduce screen distraction and reinforce productive habits.
+
+---
+
+### **Feature Comparison Table**
+
+| Feature / App        | **StudyBuddy** | StudySmarter | Classify | Forest |
+|----------------------|----------------|--------------|----------|--------|
+| Notes Manager        | Yes            | Limited      | No       | No     |
+| Motivational Quotes  | Yes            | No           | No       | No     |
+| Study Timer          | Yes            | No           | No       | Yes    |
+| Study Tips / Habits  | Yes            | No           | No       | Limited |
+| User Accounts        | Firebase       | Optional     | No       | No     |
+| Cloud Sync           | KIV            | Not full     | No       | No     |
+| Student Focus        | Very Strong    | Medium       | Strong   | Medium |
+| Target Age Group     | All students   | Uni/JC       | Sec/Tertiary | All students |
+
+StudyBuddy positions itself as an **all-in-one study companion with motivational elements**, unlike competitors that focus only on timers or planners.  
+
+---
+
+### **Competitor Strengths**
+
+#### **StudySmarter**
+- Huge flashcard library and student-generated content  
+- Strong revision tools (quizzes, spaced repetition)  
+- Progress analytics  
+- Large active user population  
+
+#### **Classify**
+- Very simple UI suitable for younger students  
+- Clean, minimal homework/timetable tracking  
+- Very easy onboarding  
+
+#### **Forest**
+- Powerful gamification — tree-growing system  
+- Excellent habit-building appeal  
+- Strong psychological engagement  
+
+---
+
+### **Competitor Weaknesses**
+
+#### **StudySmarter**
+- Overcrowded UI with too many features  
+- Contains ads that disrupt studying  
+- Lacks motivational features  
+- No integration of notes + motivation + study habits  
+
+#### **Classify**
+- Only covers timetable/homework  
+- No notes, tips, or motivational features  
+- No cloud sync  
+- Not deep enough for tertiary students  
+
+#### **Forest**
+- Only a timer; not a study-specific tool  
+- No notes, reminders, or study guides  
+- Long-term engagement tends to drop once novelty fades  
+
+---
+
+### **Opportunities for StudyBuddy**
+
+1. **Become the “Motivational Study Companion”**  
+   StudyBuddy uniquely blends notes, motivation, tips, and habits — no competitor provides this combination.
+
+2. **Appeal to Primary & Secondary Students**  
+   Unlike competitors targeting older students, StudyBuddy’s friendly branding and mascot appeal to younger learners.
+
+3. **All-in-one convenience**  
+   Students often use multiple apps (Notion, Forest, Pinterest, TikTok).  
+   StudyBuddy reduces friction by consolidating productivity, notes, and motivation into one app.
+
+4. **Cloud Safety via Firebase**  
+   Forest and Classify lack multi-device sync — a clear advantage for StudyBuddy.
+
+5. **Potential for a “Study Habit Engine”**  
+   Features like streaks, scheduled tips, and motivational routines are not found in competitor apps.
+
+---
+
+### **Threats**
+
+- Competitors may add similar features (e.g., Forest adding quotes, StudySmarter adding motivation)  
+- Large platforms like Notion or Google Classroom may expand into habit/motivation features  
+- Retention challenges if onboarding or motivation delivery becomes repetitive or cluttered  
+
+---
+
+### **StudyBuddy’s Unique Value Proposition (UVP)**
+
+**StudyBuddy is a friendly, beginner-focused study companion that keeps students motivated, organised, and consistent**  
+— combining **notes, study tips, habits, and motivation** in one seamless experience.
+
+**What makes StudyBuddy stand out:**
+
+- The **ONLY** app among competitors with a **Motivation Hub**  
+- Appealing mascot + modern, soft aesthetic for younger learners  
+- Lightweight and simple (less overwhelming than Notion/StudySmarter)  
+- Integrated ecosystem: *Notes + Motivation + Habits*  
+
+---
+
 ## Planned Stage 2 Features
 
 Each team member will implement one *stand-alone* feature requiring new concepts, such as a new Activity, background Service, or advanced API.
@@ -131,7 +262,7 @@ Each team member will implement one *stand-alone* feature requiring new concepts
 | Member | Planned Stage 2 Feature |
 |--------|--------------------------|
 | **Pey Zhi Xun** | *To be added* |
-| **Fan Zhizhong** | *To be added* |
+| **Fan Zhizhong** | Subscription Plans |
 | **Arjun** | *To be added* |
 | **Daniel** | *To be added* |
 
