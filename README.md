@@ -318,7 +318,7 @@ All AI output was **reviewed, edited, and customized** before inclusion in code.
 ### 1. Wireframes
 
 **Low-Fidelity Wireframes (Sketches)**<br />
-<img src="screenshots/wireframes/lofi.pnglofi.png" width="400" alt="Low-Fidelity Wireframe" />
+<img src="screenshots/wireframes/lofi.png" width="400" alt="Low-Fidelity Wireframe" />
 
 <br />
 
