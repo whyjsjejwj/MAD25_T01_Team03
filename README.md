@@ -280,7 +280,7 @@ Each team member will implement one *stand-alone* feature requiring new concepts
 |--------|--------------------------|
 | **Pey Zhi Xun** | Notes Category & Study Groups |
 | **Fan Zhizhong** | Subscription Plans |
-| **Arjun Vivekananthan** | *To be added* |
+| **Arjun Vivekananthan** | Focus Music Player |
 | **Daniel Sha** | Study Reflection Journal |
 
 ---
@@ -317,12 +317,12 @@ All AI output was **reviewed, edited, and customized** before inclusion in code.
 
 ### 1. Wireframes
 
-**Low-Fidelity Wireframes (Sketches)**<br />
+**Low-Fidelity Wireframes**<br />
 <img src="screenshots/wireframes/lofi.png" width="400" alt="Low-Fidelity Wireframe" />
 
 <br />
 
-**High-Fidelity Wireframes (Figma)**<br />
+**High-Fidelity Wireframes**<br />
 <img src="screenshots/wireframes/hifi.png" width="400" alt="High-Fidelity Wireframe" />
 
 ### 2. User Research (Survey Responses)
