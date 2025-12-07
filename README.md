@@ -8,11 +8,14 @@
 3. [Motivation & Objectives](#motivation--objectives)
 4. [Design Considerations](#design-considerations)
 5. [Feature Overview](#feature-overview)
-6. [Stage 1 Feature Responsibilities](#stage-1-feature-responsibilities)
-7. [Planned Stage 2 Features](#planned-stage-2-features)
-8. [LLM Usage Declaration](#llm-usage-declaration)
-9. [Team Members](#team-members)
-10. [Disclaimer](#disclaimer)
+6. [User Guide](#user-guide)
+7. [Stage 1 Feature Responsibilities](#stage-1-feature-responsibilities)
+8. [Competitor Analysis](#competitor-analysis)
+9. [Planned Stage 2 Features](#planned-stage-2-features)
+10. [LLM Usage Declaration](#llm-usage-declaration)
+11. [Team Members](#team-members)
+12. [Appendices](#appendices)
+13. [Disclaimer](#disclaimer)
 
 ---
 
@@ -97,13 +100,13 @@ This forward-thinking structure ensures StudyBuddy can grow into a more intellig
 
 ## Feature Overview
 
-### **1. Login + Notes Manager** (By Pey Zhi Xun)
+### **1. Login + Notes Manager** (By Zhi Xun)
 This feature allows users to create an account, log in securely, and manage their study notes in an organized manner. Students can create, edit, delete, and categorize notes by subject or module.
 
 Reason for implementation:
 Students often struggle with scattered or misplaced notes. A centralized note-taking system ensures all study materials stay accessible, structured, and backed up across devices through Firebase authentication.
 
-### **2. Motivation Hub** (By Fan Zhizhong)
+### **2. Motivation Hub** (By Zhizhong)
 The Motivation Hub provides daily motivational quotes and study tips to help students build resilience and maintain consistent study habits. Users can save their favourite quotes for quick access, and background images help fulfil the multimedia requirement.
 
 Reason for implementation:
@@ -123,14 +126,37 @@ Self-testing is one of the most effective ways to strengthen long-term memory. T
 
 ---
 
+## User Guide
+
+To setup and run the application in your local environment, please follow these steps:
+
+### Prerequisites
+* Android Studio Ladybug (or newer)
+* Minimum SDK: API 24 (Android 7.0)
+* Recommended Emulator: Pixel 8 API 35
+
+### Installation & Running
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/whyjsjejwj/MAD25_T01_Team03.git
+    ```
+2.  **Open in Android Studio:**
+    Select `File > Open` and navigate to the cloned folder.
+3.  **Sync Gradle:**
+    Allow Android Studio to download necessary dependencies.
+4.  **Run the App:**
+    Select an emulator or connected device and click the **Run** (Play) button.
+
+---
+
 ## Stage 1 Feature Responsibilities
 
 | Member | Feature | Description |
 |--------|---------|-------------|
 | **Pey Zhi Xun** | Login + Notes Manager | Authentication + notes CRUD and organization |
 | **Fan Zhizhong** | Motivation Hub | Quotes, study tips, and favourite saving |
-| **Arjun** | Study Timer | Pomodoro timer and UI for focus sessions |
-| **Daniel** | Quiz Zone | Quiz interface, scoring logic, and question sets |
+| **Arjun Vivekananthan** | Study Timer | Pomodoro timer and UI for focus sessions |
+| **Daniel Sha** | Quiz Zone | Quiz interface, scoring logic, and question sets |
 
 ---
 
@@ -213,21 +239,16 @@ StudyBuddy positions itself as an **all-in-one study companion with motivational
 
 ### **Opportunities for StudyBuddy**
 
-1. **Become the “Motivational Study Companion”**  
-   StudyBuddy uniquely blends notes, motivation, tips, and habits — no competitor provides this combination.
+1. **Become the “Motivational Study Companion”** StudyBuddy uniquely blends notes, motivation, tips, and habits — no competitor provides this combination.
 
-2. **Appeal to Primary & Secondary Students**  
-   Unlike competitors targeting older students, StudyBuddy’s friendly branding and mascot appeal to younger learners.
+2. **Appeal to Primary & Secondary Students** Unlike competitors targeting older students, StudyBuddy’s friendly branding and mascot appeal to younger learners.
 
-3. **All-in-one convenience**  
-   Students often use multiple apps (Notion, Forest, Pinterest, TikTok).  
+3. **All-in-one convenience** Students often use multiple apps (Notion, Forest, Pinterest, TikTok).  
    StudyBuddy reduces friction by consolidating productivity, notes, and motivation into one app.
 
-4. **Cloud Safety via Firebase**  
-   Forest and Classify lack multi-device sync — a clear advantage for StudyBuddy.
+4. **Cloud Safety via Firebase** Forest and Classify lack multi-device sync — a clear advantage for StudyBuddy.
 
-5. **Potential for a “Study Habit Engine”**  
-   Features like streaks, scheduled tips, and motivational routines are not found in competitor apps.
+5. **Potential for a “Study Habit Engine”** Features like streaks, scheduled tips, and motivational routines are not found in competitor apps.
 
 ---
 
@@ -241,17 +262,13 @@ StudyBuddy positions itself as an **all-in-one study companion with motivational
 
 ### **StudyBuddy’s Unique Value Proposition (UVP)**
 
-**StudyBuddy is a friendly, beginner-focused study companion that keeps students motivated, organised, and consistent**  
-— combining **notes, study tips, habits, and motivation** in one seamless experience.
+**StudyBuddy is a friendly, beginner-focused study companion that keeps students motivated, organised, and consistent** — combining **notes, study tips, habits, and motivation** in one seamless experience.
 
 **What makes StudyBuddy stand out:**
 
-- The **ONLY** app among competitors with a **Motivation Hub**  
-- Appealing mascot + modern, soft aesthetic for younger learners  
+- The **ONLY** app among competitors with a **Motivation Hub** - Appealing mascot + modern, soft aesthetic for younger learners  
 - Lightweight and simple (less overwhelming than Notion/StudySmarter)  
-- Integrated ecosystem: *Notes + Motivation + Habits*  
-
----
+- Integrated ecosystem: *Notes + Motivation + Habits* ---
 
 ## Planned Stage 2 Features
 
@@ -261,10 +278,10 @@ Each team member will implement one *stand-alone* feature requiring new concepts
 
 | Member | Planned Stage 2 Feature |
 |--------|--------------------------|
-| **Pey Zhi Xun** | *To be added* |
+| **Pey Zhi Xun** | Notes Category & Study Groups |
 | **Fan Zhizhong** | Subscription Plans |
-| **Arjun** | *To be added* |
-| **Daniel** | *To be added* |
+| **Arjun Vivekananthan** | *To be added* |
+| **Daniel Sha** | Study Reflection Journal |
 
 ---
 
@@ -294,7 +311,58 @@ All AI output was **reviewed, edited, and customized** before inclusion in code.
   </tr>
 </table>
 
+---
 
+## Appendices
+
+### 1. Wireframes
+
+**Low-Fidelity Wireframes (Sketches)**<br />
+<img src="screenshots/wireframes/lofi.pnglofi.png" width="400" alt="Low-Fidelity Wireframe" />
+
+<br />
+
+**High-Fidelity Wireframes (Figma)**<br />
+<img src="screenshots/wireframes/hifi.png" width="400" alt="High-Fidelity Wireframe" />
+
+### 2. User Research (Survey Responses)
+
+**Survey Data & Personas**<br />
+<p float="left">
+  <img src="screenshots/survey/survey1.png" width="200" alt="Survey Response 1" />
+  <img src="screenshots/survey/survey4.png" width="200" alt="Survey Response 4" />
+  <img src="screenshots/survey/survey2.png" width="200" alt="Survey Response 2" />
+  <img src="screenshots/survey/survey3.png" width="200" alt="Survey Response 3" />
+</p>
+
+### 3. App Screenshots (Stage 1)
+
+**Authentication & Notes**<br />
+<p float="left">
+  <img src="screenshots/app/login.png" width="200" alt="Login Screen" />
+  <img src="screenshots/app/notes.png" width="200" alt="Notes List" /> 
+</p>
+
+<br />
+
+**Motivation Hub**<br />
+<p float="left">
+  <img src="screenshots/app/motivation.png" width="200" alt="Motivation Screen" />
+</p>
+
+<br />
+
+**Study Timer (Pomodoro)**<br />
+<p float="left">
+  <img src="screenshots/app/timer.png" width="200" alt="Timer Screen" />
+</p>
+
+<br />
+
+**Quiz Zone**<br />
+<p float="left">
+  <img src="screenshots/app/quiz.png" width="200" alt="Quiz Screen" />
+</p>
 
 ---
 
@@ -302,4 +370,3 @@ All AI output was **reviewed, edited, and customized** before inclusion in code.
 
 This is a student assignment project for the **Mobile App Development (MAD)** module at **Ngee Ann Polytechnic**.  
 This project is developed solely for **educational purposes**.
-
