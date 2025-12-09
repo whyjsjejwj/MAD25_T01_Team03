@@ -106,9 +106,9 @@ fun AppNav() {
                 )
             ) { backStackEntry ->
 
-                val uid = backStackEntry.arguments!!.getString("uid")!!
-                val displayName = backStackEntry.arguments!!.getString("displayName")!!
-                val email = backStackEntry.arguments!!.getString("email")!!
+                val uid = backStackEntry.arguments?.getString("uid") ?: ""
+                val displayName = backStackEntry.arguments?.getString("displayName") ?: ""
+                val email = backStackEntry.arguments?.getString("email") ?: ""
 
                 HomeScreen(
                     nav = nav,
@@ -134,9 +134,9 @@ fun AppNav() {
                 )
             ) { backStack ->
 
-                val uid = backStack.arguments!!.getString("uid")!!
-                val displayName = backStack.arguments!!.getString("displayName")!!
-                val email = backStack.arguments!!.getString("email")!!
+                val uid = backStack.arguments?.getString("uid") ?: ""
+                val displayName = backStack.arguments?.getString("displayName") ?: ""
+                val email = backStack.arguments?.getString("email") ?: ""
 
                 NotesScreen(
                     username = uid,
@@ -177,8 +177,8 @@ fun AppNav() {
                 )
             ) { backStack ->
 
-                val displayName = backStack.arguments!!.getString("displayName")!!
-                val email = backStack.arguments!!.getString("email")!!
+                val displayName = backStack.arguments?.getString("displayName") ?: ""
+                val email = backStack.arguments?.getString("email") ?: ""
 
                 ProfileScreen(
                     displayName = displayName,
@@ -202,9 +202,9 @@ fun AppNav() {
                 )
             ) { backStack ->
 
-                val uid = backStack.arguments!!.getString("uid")!!
-                val displayName = backStack.arguments!!.getString("displayName")!!
-                val email = backStack.arguments!!.getString("email")!!
+                val uid = backStack.arguments?.getString("uid") ?: ""
+                val displayName = backStack.arguments?.getString("displayName") ?: ""
+                val email = backStack.arguments?.getString("email") ?: ""
 
                 QuizScreen(
                     uid = uid,
@@ -228,9 +228,9 @@ fun AppNav() {
                 )
             ) { backStack ->
 
-                val uid = backStack.arguments!!.getString("uid")!!
-                val displayName = backStack.arguments!!.getString("displayName")!!
-                val email = backStack.arguments!!.getString("email")!!
+                val uid = backStack.arguments?.getString("uid") ?: ""
+                val displayName = backStack.arguments?.getString("displayName") ?: ""
+                val email = backStack.arguments?.getString("email") ?: ""
 
                 MotivationScreen(
                     uid = uid,
@@ -252,9 +252,9 @@ fun AppNav() {
                 )
             ) { backStack ->
 
-                val uid = backStack.arguments!!.getString("uid")!!
-                val displayName = backStack.arguments!!.getString("displayName")!!
-                val email = backStack.arguments!!.getString("email")!!
+                val uid = backStack.arguments?.getString("uid") ?: ""
+                val displayName = backStack.arguments?.getString("displayName") ?: ""
+                val email = backStack.arguments?.getString("email") ?: ""
 
                 FavouriteScreen(
                     uid = uid,
@@ -276,9 +276,9 @@ fun AppNav() {
                     navArgument("email") { type = NavType.StringType }
                 )
             ) { backStack ->
-                val uid = backStack.arguments!!.getString("uid")!!
-                val displayName = backStack.arguments!!.getString("displayName")!!
-                val email = backStack.arguments!!.getString("email")!!
+                val uid = backStack.arguments?.getString("uid") ?: ""
+                val displayName = backStack.arguments?.getString("displayName") ?: ""
+                val email = backStack.arguments?.getString("email") ?: ""
 
                 TimerScreen(
                     nav = nav,

@@ -60,7 +60,7 @@ fun HomeScreen(
                 .padding(16.dp)
         ) {
 
-            // ---------------- TOP BAR ----------------
+            // top bar
             TopBar(
                 displayName = displayName,
                 email = email,
@@ -69,7 +69,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // ---------------- WELCOME ----------------
+            // welcome
             Text(
                 text = "Welcome back, $displayName!",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -78,7 +78,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // ---------------- SUMMARY CARDS ----------------
+            // summary cards
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -98,9 +98,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // ===================================================
-            // ⭐ NOTES PREVIEW SECTION
-            // ===================================================
+            // notes preview
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -135,7 +133,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // ---------------- NO NOTES ----------------
+            // no notes
             if (notes.isEmpty()) {
                 Text(
                     "No notes yet. Tap + to create one.",
@@ -144,7 +142,7 @@ fun HomeScreen(
                 return@Column
             }
 
-            // ---------------- NOTES PREVIEW LIST ----------------
+            // notes preview notes
             val previewNotes = notes.take(4)
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -205,9 +203,8 @@ fun SummaryCard(
     }
 }
 
-// ================================================================
-// TOP BAR
-// ================================================================
+// top bar
+
 @Composable
 fun TopBar(
     displayName: String,

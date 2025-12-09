@@ -30,13 +30,16 @@ fun MotivationScreen(
     onOpenMotivation: () -> Unit,
     onOpenFavourites: () -> Unit
 ) {
+    // initialize database helpers
     val quotesDb = remember { QuotesFirestore() }
     val motivationDb = remember { MotivationFirestore() }
 
+    // state variables for quotes list
     var quotes by remember { mutableStateOf<List<MotivationItem>>(emptyList()) }
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
 
     // --- Daily Habit Checklist ---
+    // hardcoded list of habits
     val habits = listOf(
         "Study at least 25 minutes",
         "Review yesterday’s notes",
@@ -44,14 +47,17 @@ fun MotivationScreen(
         "Plan tomorrow’s task"
     )
 
+    // track which habits are checked (true/false)
     var habitStatus by remember {
         mutableStateOf(habits.associateWith { false })
     }
 
+    // calculate progress for the progress bar
     val completedHabits = habitStatus.values.count { it }
     val totalHabits = habits.size
 
     // --- Load Quote Data From Firebase ---
+    // fetch data when screen loads
     LaunchedEffect(Unit) {
         quotesDb.getQuotes { list ->
             quotes = list.take(5)
@@ -59,6 +65,7 @@ fun MotivationScreen(
         }
     }
 
+    // helper to get the selected quote object
     val selectedQuote = selectedIndex?.let { idx ->
         quotes.getOrNull(idx)
     }
@@ -86,6 +93,7 @@ fun MotivationScreen(
         }
     ) { innerPadding ->
 
+        // main content column with scrolling
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -101,11 +109,13 @@ fun MotivationScreen(
         )
         {
 
+            // quote selector card component
             QuoteSelectorCard(
                 quotes = quotes,
                 selectedIndex = selectedIndex,
                 onSelect = { selectedIndex = it },
                 selectedQuote = selectedQuote,
+                // logic to save quote to firebase
                 onSave = {
                     if (selectedQuote != null && selectedIndex != null) {
                         motivationDb.addFavourite(uid, selectedQuote)
@@ -114,10 +124,13 @@ fun MotivationScreen(
                 },
                 onOpenFavourites = onOpenFavourites
             )
+
+            // daily habits card component
             DailyChecklistCard(
                 habits = habits,
                 habitStatus = habitStatus,
                 onHabitToggle = { habit ->
+                    // update map state when checkbox is clicked
                     habitStatus = habitStatus.toMutableMap().apply {
                         this[habit] = !(this[habit] ?: false)
                     }
@@ -125,6 +138,8 @@ fun MotivationScreen(
                 completedHabits = completedHabits,
                 totalHabits = totalHabits
             )
+
+            // tips section
             FlashcardTipsSection()
         }
     }
@@ -156,6 +171,7 @@ fun QuoteSelectorCard(
 
             Spacer(Modifier.height(12.dp))
 
+            // loop through quotes and display them
             quotes.forEachIndexed { index, item ->
                 val isSelected = index == selectedIndex
 
@@ -183,6 +199,7 @@ fun QuoteSelectorCard(
 
             Spacer(Modifier.height(12.dp))
 
+            // save button
             Button(
                 onClick = onSave,
                 enabled = selectedQuote != null,
@@ -288,6 +305,7 @@ fun FlashcardTipsSection() {
 @Composable
 fun FlashcardTip(title: String, desc: String) {
 
+    // state to track if card is flipped
     var flipped by remember { mutableStateOf(false) }
 
     Card(
@@ -300,6 +318,7 @@ fun FlashcardTip(title: String, desc: String) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
+            // flip logic
             if (!flipped) {
                 Text(title, fontWeight = FontWeight.Bold, color = Color(0xFF7A5633))
                 Text("Tap to reveal →", color = Color.Gray)
