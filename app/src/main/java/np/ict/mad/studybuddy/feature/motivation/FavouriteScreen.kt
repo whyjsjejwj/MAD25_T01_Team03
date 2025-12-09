@@ -22,11 +22,14 @@ fun FavouriteScreen(
     onOpenQuiz: () -> Unit,
     onOpenMotivation: () -> Unit
 ) {
+    // initialize database helper
     val motivationDb = remember { MotivationFirestore() }
 
+    // state variable to hold the list of favourite quotes
     var favourites by remember { mutableStateOf<List<MotivationItem>>(emptyList()) }
 
-    // Load favourites from Firebase
+    // --- Load Data from Firebase ---
+    // using LaunchedEffect to load data asynchronously when screen opens
     LaunchedEffect(uid) {
         motivationDb.getFavourites(uid) { list ->
             favourites = list
@@ -54,9 +57,13 @@ fun FavouriteScreen(
                 .padding(16.dp)
         ) {
 
+            // check if list is empty
             if (favourites.isEmpty()) {
                 Text("You have no favourite quotes yet.")
             } else {
+
+                // --- Lazy List Implementation ---
+                // using lazycolumn for efficient scrolling of list items
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(favourites) { item ->
 
@@ -72,6 +79,7 @@ fun FavouriteScreen(
 
                                 Spacer(Modifier.height(12.dp))
 
+                                // --- Delete Logic ---
                                 Button(
                                     onClick = {
                                         motivationDb.removeFavourite(uid, item) { success ->
