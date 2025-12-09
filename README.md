@@ -304,10 +304,10 @@ All AI output was **reviewed, edited, and customized** before inclusion in code.
 
 <table>
   <tr>
-    <td align="center"><a href="https://github.com/whyjsjejwj"><img src="https://github.com/whyjsjejwj.png" width="100px;" alt=""/><br /><sub><b>Fan Zhizhong</b></sub></a></td>
-    <td align="center"><a href="https://github.com/PeyZhiXun"><img src="https://github.com/PeyZhiXun.png" width="100px;" alt=""/><br /><sub><b>Pey Zhi Xun</b></sub></a></td>
-    <td align="center"><a href="https://github.com/mk1342"><img src="https://github.com/mk1342.png" width="100px;" alt=""/><br /><sub><b>Arjun Vivekananthan</b></sub></a></td>
-    <td align="center"><a href="https://github.com/Daniel-Sha14"><img src="https://github.com/Daniel-Sha14.png" width="100px;" alt=""/><br /><sub><b>Daniel Sha</b></sub></a></td>
+    <td align="center"><a href="https://github.com/whyjsjejwj"><img src="https://github.com/whyjsjejwj.png" width="100px;" alt=""/><br /><sub><b>Fan Zhizhong | S10257079D</b></sub></a></td>
+    <td align="center"><a href="https://github.com/PeyZhiXun"><img src="https://github.com/PeyZhiXun.png" width="100px;" alt=""/><br /><sub><b>Pey Zhi Xun |S10258774E</b></sub></a></td>
+    <td align="center"><a href="https://github.com/mk1342"><img src="https://github.com/mk1342.png" width="100px;" alt=""/><br /><sub><b>Arjun Vivekananthan | S10258386B</b></sub></a></td>
+    <td align="center"><a href="https://github.com/Daniel-Sha14"><img src="https://github.com/Daniel-Sha14.png" width="100px;" alt=""/><br /><sub><b>Daniel Sha | S10258472D</b></sub></a></td>
   </tr>
 </table>
 
