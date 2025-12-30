@@ -2,6 +2,7 @@ package np.ict.mad.studybuddy.feature.auth
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,35 +21,35 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import np.ict.mad.studybuddy.R
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit, // called when registration completes (go back to Login)
-    onBackToLogin: () -> Unit      // navigate back to Login screen
+    onRegisterSuccess: () -> Unit,
+    onBackToLogin: () -> Unit
 ) {
+    val auth = remember { FirebaseAuth.getInstance() }
+    val firestore = remember { FirebaseFirestore.getInstance() }
+    val scope = rememberCoroutineScope()
 
-    // Firebase instances for auth and saving profile
-    val auth = FirebaseAuth.getInstance()
-    val firestore = FirebaseFirestore.getInstance()
-
-    // Form input states (saved across rotation)
     var email by rememberSaveable { mutableStateOf("") }
     var displayName by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
 
-    // Toggles for showing / hiding passwords
     var showPassword by rememberSaveable { mutableStateOf(false) }
     var showConfirmPassword by rememberSaveable { mutableStateOf(false) }
 
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var loading by rememberSaveable { mutableStateOf(false) }
 
-    val scope = rememberCoroutineScope()
-
+    // ✅ Match Login gradient
     val gradient = Brush.verticalGradient(
-        listOf(Color(0xFF4A90E2), Color(0xFF3A7BD5))
+        listOf(
+            Color(0xFFFFFBF2),  // soft cream
+            Color(0xFFF3D67C)   // warm yellow
+        )
     )
 
     Box(
@@ -58,7 +59,6 @@ fun RegisterScreen(
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Card container for the registration form
         Card(
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(8.dp),
@@ -69,23 +69,25 @@ fun RegisterScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-
+                // ✅ Logo similar sizing to Login
                 Image(
                     painter = painterResource(id = R.drawable.studybuddylogo_cropped),
                     contentDescription = "StudyBuddy Logo",
                     modifier = Modifier
-                        .size(180.dp)
-                        .padding(bottom = 4.dp)
+                        .size(200.dp)
+                        .padding(bottom = 0.dp)
                 )
 
+                Spacer(Modifier.height(4.dp))
+
                 Text("Create Account", style = MaterialTheme.typography.headlineSmall)
+
                 Spacer(Modifier.height(16.dp))
 
-                // Email
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it; error = null },
-                    label = { Text("Email") },
+                    label = { Text("Email Address") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(
@@ -96,132 +98,130 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // Display name
                 OutlinedTextField(
                     value = displayName,
                     onValueChange = { displayName = it; error = null },
                     label = { Text("Display Name") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                 )
 
                 Spacer(Modifier.height(12.dp))
 
-                // Password
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it; error = null },
                     label = { Text("Password") },
                     singleLine = true,
-                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    visualTransformation =
+                        if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        // Toggle between show/hide confirm password
                         TextButton(onClick = { showPassword = !showPassword }) {
-                            Text(if (showPassword) "Hide" else "Show")
+                            Text(
+                                if (showPassword) "Hide" else "Show",
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Next,
+                        keyboardType = KeyboardType.Password
+                    )
                 )
 
                 Spacer(Modifier.height(12.dp))
 
-                // Confirm password
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it; error = null },
                     label = { Text("Confirm Password") },
                     singleLine = true,
-                    visualTransformation = if (showConfirmPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    visualTransformation =
+                        if (showConfirmPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         TextButton(onClick = { showConfirmPassword = !showConfirmPassword }) {
-                            Text(if (showConfirmPassword) "Hide" else "Show")
+                            Text(
+                                if (showConfirmPassword) "Hide" else "Show",
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Done,
+                        keyboardType = KeyboardType.Password
+                    )
                 )
 
-                Spacer(Modifier.height(8.dp))
-
-                // Error text
+                // Error message
                 if (error != null) {
                     Text(
                         error!!,
                         color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
                     )
                 }
 
                 Spacer(Modifier.height(16.dp))
 
-                // Register button
                 Button(
+                    enabled = !loading,
                     onClick = {
-                        // Basic validation for empty fields
-                        if (email.isBlank() || displayName.isBlank() ||
-                            password.isBlank() || confirmPassword.isBlank()
-                        ) {
+                        if (email.isBlank() || displayName.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                             error = "Please fill in all fields."
                             return@Button
                         }
-
-                        // Check both passwords match
                         if (password != confirmPassword) {
                             error = "Passwords do not match."
                             return@Button
                         }
 
-                        loading = true
-
                         scope.launch {
-                            auth.createUserWithEmailAndPassword(email, password)
-                                .addOnCompleteListener { task ->
-                                    if (task.isSuccessful) {
+                            loading = true
+                            error = null
+                            try {
+                                auth.createUserWithEmailAndPassword(email.trim(), password).await()
+                                val uid = auth.currentUser?.uid ?: throw Exception("No user.")
 
-                                        val uid = auth.currentUser!!.uid
+                                val profile = mapOf(
+                                    "email" to email.trim(),
+                                    "displayName" to displayName.trim()
+                                )
 
-                                        val profile = mapOf(
-                                            "email" to email,
-                                            "displayName" to displayName
-                                        )
+                                firestore.collection("users")
+                                    .document(uid)
+                                    .set(profile)
+                                    .await()
 
-                                        firestore.collection("users")
-                                            .document(uid)
-                                            .set(profile)
-                                            .addOnSuccessListener {
-                                                loading = false
-                                                onRegisterSuccess()
-                                            }
-                                            .addOnFailureListener {
-                                                loading = false
-                                                error = "Failed to save profile."
-                                            }
-
-                                    } else {
-                                        loading = false
-                                        error = task.exception?.message ?: "Registration failed."
-                                    }
-                                }
+                                loading = false
+                                onRegisterSuccess()
+                            } catch (e: Exception) {
+                                loading = false
+                                error = e.message ?: "Registration failed."
+                            }
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
                 ) {
-                    Text("Create Account", fontSize = 16.sp)
+                    Text(if (loading) "Creating..." else "Create Account", fontSize = 16.sp)
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(12.dp))
 
-                TextButton(onClick = onBackToLogin) {
-                    Text("Already have an account? Sign In")
-                }
+                Text(
+                    "Already have an account? Sign In",
+                    modifier = Modifier.clickable { onBackToLogin() },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
-    }
-
-    // Simple loading indicator when registration is in progress
-    if (loading) {
-        CircularProgressIndicator()
     }
 }

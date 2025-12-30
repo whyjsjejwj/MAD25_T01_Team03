@@ -15,7 +15,7 @@ enum class BottomNavTab { HOME, TIMER, QUIZ, MOTIVATION }
 
 @Composable
 fun BottomNavBar(
-    selectedTab: BottomNavTab, //the screen tells which tab is currently active
+    selectedTab: BottomNavTab,
     onHome: () -> Unit,
     onOpenTimer: () -> Unit,
     onOpenQuiz: () -> Unit,
@@ -24,27 +24,32 @@ fun BottomNavBar(
     NavigationBar(containerColor = Color.White) {
 
         NavigationBarItem(
-            selected = selectedTab == BottomNavTab.HOME, //highlight Home if we are on Home screen
-            onClick = onHome, //when clicked, navigate to Home
-            icon = { Icon(Icons.Default.Home, contentDescription = "Home") }
+            selected = selectedTab == BottomNavTab.HOME,
+            onClick = onHome,
+            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+            label = { Text("Home") }
         )
 
         NavigationBarItem(
-            selected = selectedTab == BottomNavTab.TIMER, //highlight Timer only if timer screen is active
+            selected = selectedTab == BottomNavTab.TIMER,
             onClick = onOpenTimer,
-            icon = { Icon(Icons.Default.Timer, contentDescription = "Study Timer") }
+            icon = { Icon(Icons.Default.Timer, contentDescription = "Timer") },
+            label = { Text("Timer") }
         )
 
         NavigationBarItem(
-            selected = selectedTab == BottomNavTab.QUIZ, //highlight Quiz if selectedTab == QUIZ
+            selected = selectedTab == BottomNavTab.QUIZ,
             onClick = onOpenQuiz,
-            icon = { Icon(Icons.Default.School, contentDescription = "Quiz") }
+            icon = { Icon(Icons.Default.School, contentDescription = "Quiz") },
+            label = { Text("Quiz") }
         )
 
         NavigationBarItem(
-            selected = selectedTab == BottomNavTab.MOTIVATION, //highlight Motivation when it's the current tab
+            selected = selectedTab == BottomNavTab.MOTIVATION,
             onClick = onOpenMotivation,
-            icon = { Icon(Icons.Default.Star, contentDescription = "Motivation") }
+            icon = { Icon(Icons.Default.Star, contentDescription = "Motivation") },
+            label = { Text("Motivation") }
         )
     }
 }
+

@@ -52,10 +52,11 @@ fun LoginScreen(
 
     val gradient = Brush.verticalGradient(
         listOf(
-            Color(0xFFFFF4DB),
-            Color(0xFFF3D67C)
+            Color(0xFFFFFBF2),  // soft cream
+            Color(0xFFF3D67C)   // warm yellow
         )
     )
+
 
 
     Box(
@@ -110,7 +111,8 @@ fun LoginScreen(
                     trailingIcon = {              // "Show / Hide" toggle button
                         TextButton(onClick = { showPassword = !showPassword }) {
                             Text(if (showPassword) "Hide" else "Show",
-                                    color = Color(0xFF8C6F4A))
+                                color = MaterialTheme.colorScheme.primary)
+
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -144,7 +146,8 @@ fun LoginScreen(
                     Text(
                         text = "Forgot Password?",
                         modifier = Modifier.clickable { onNavigateForgotPassword() },
-                        color = Color(0xFF8C6F4A)
+                        color = MaterialTheme.colorScheme.primary
+
                     )
                 }
 
@@ -215,7 +218,8 @@ fun LoginScreen(
                     "Don't have an account? Register here",
                     modifier = Modifier.clickable { onNavigateRegister() },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF8C6F4A)
+                    color = MaterialTheme.colorScheme.primary
+
                 )
             }
         }

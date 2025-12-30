@@ -82,6 +82,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.code.gson:gson:2.10.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")

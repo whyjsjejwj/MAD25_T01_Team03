@@ -2,29 +2,20 @@ package np.ict.mad.studybuddy.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
-import np.ict.mad.studybuddy.feature.auth.ForgotPasswordScreen
-import np.ict.mad.studybuddy.feature.auth.LoginPreferences
-import np.ict.mad.studybuddy.feature.auth.LoginScreen
-import np.ict.mad.studybuddy.feature.auth.RegisterScreen
+import np.ict.mad.studybuddy.core.storage.UserDirectoryFirestore
+import np.ict.mad.studybuddy.feature.auth.*
+import np.ict.mad.studybuddy.feature.groups.DirectMessageSearchScreen
+import np.ict.mad.studybuddy.feature.groups.GroupChatScreen
+import np.ict.mad.studybuddy.feature.groups.GroupsScreen
 import np.ict.mad.studybuddy.feature.home.HomeScreen
 import np.ict.mad.studybuddy.feature.motivation.FavouriteScreen
 import np.ict.mad.studybuddy.feature.motivation.MotivationScreen
@@ -32,9 +23,7 @@ import np.ict.mad.studybuddy.feature.notes.EditNoteScreen
 import np.ict.mad.studybuddy.feature.notes.NotesScreen
 import np.ict.mad.studybuddy.feature.profile.ProfileScreen
 import np.ict.mad.studybuddy.feature.quiz.QuizScreen
-import np.ict.mad.studybuddy.feature.timer.FloatingTimer
-import np.ict.mad.studybuddy.feature.timer.TimerScreen
-import np.ict.mad.studybuddy.feature.timer.TimerViewModel
+import np.ict.mad.studybuddy.feature.timer.*
 
 @Composable
 fun AppNav() {
@@ -42,6 +31,7 @@ fun AppNav() {
     val nav = rememberNavController()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
     val loginPrefs = remember { LoginPreferences(context) }
     val timerViewModel: TimerViewModel = viewModel()
 
@@ -52,28 +42,58 @@ fun AppNav() {
 
     var autoLoginDone by remember { mutableStateOf(false) }
 
-    val navBackStackEntry by nav.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val directoryDb = remember { UserDirectoryFirestore() }
 
-    // AUTO-LOGIN
-    LaunchedEffect(isLoggedIn, savedUid) {
+    // ---------- AUTO LOGIN ----------
+    LaunchedEffect(isLoggedIn, savedUid, savedDisplayName, savedEmail) {
+        val uid = savedUid.orEmpty()
+        val name = savedDisplayName.orEmpty()
+        val email = savedEmail.orEmpty()
+
         if (!autoLoginDone && isLoggedIn && savedUid.orEmpty().isNotBlank()) {
             autoLoginDone = true
+
+            // ensure user is searchable for DM
+            scope.launch {
+                runCatching {
+                    directoryDb.upsertProfile(uid, name, email)
+                }
+            }
+
             nav.navigate("home/$savedUid/$savedDisplayName/$savedEmail") {
                 popUpTo("login") { inclusive = true }
             }
         }
     }
-    Box(modifier = Modifier.fillMaxSize()) {
-        NavHost(navController = nav, startDestination = "login") {
 
-            // LOGIN SCREEN
+    // Helper: ALWAYS go to Home (not backstack)
+    fun goHome(uid: String, name: String, email: String) {
+        nav.navigate("home/$uid/$name/$email") {
+            launchSingleTop = true
+            popUpTo("home/{uid}/{displayName}/{email}") { inclusive = false }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        NavHost(
+            navController = nav,
+            startDestination = "login"
+        ) {
+
+            // ---------- LOGIN ----------
             composable("login") {
                 LoginScreen(
                     loginPrefs = loginPrefs,
                     onLoginSuccess = { uid, displayName ->
-
                         val email = FirebaseAuth.getInstance().currentUser?.email ?: ""
+
+                        // ensure user is searchable for DM
+                        scope.launch {
+                            runCatching {
+                                directoryDb.upsertProfile(uid, displayName, email)
+                            }
+                        }
 
                         nav.navigate("home/$uid/$displayName/$email") {
                             popUpTo("login") { inclusive = true }
@@ -84,7 +104,7 @@ fun AppNav() {
                 )
             }
 
-            // REGISTER SCREEN
+            // ---------- REGISTER ----------
             composable("register") {
                 RegisterScreen(
                     onRegisterSuccess = {
@@ -96,210 +116,264 @@ fun AppNav() {
                 )
             }
 
-            // HOME SCREEN
+            // ---------- HOME ----------
             composable(
-                route = "home/{uid}/{displayName}/{email}",
+                "home/{uid}/{displayName}/{email}",
                 arguments = listOf(
                     navArgument("uid") { type = NavType.StringType },
                     navArgument("displayName") { type = NavType.StringType },
                     navArgument("email") { type = NavType.StringType }
                 )
-            ) { backStackEntry ->
-
-                val uid = backStackEntry.arguments?.getString("uid") ?: ""
-                val displayName = backStackEntry.arguments?.getString("displayName") ?: ""
-                val email = backStackEntry.arguments?.getString("email") ?: ""
+            ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+                val email = entry.arguments!!.getString("email")!!
 
                 HomeScreen(
                     nav = nav,
                     uid = uid,
-                    displayName = displayName,
+                    displayName = name,
                     email = email,
-                    onOpenProfile = { nav.navigate("profile/$uid/$displayName/$email") },
-                    onOpenTimer = { nav.navigate("timer/$uid/$displayName/$email") },
-                    onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
-                    onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
-                )
-
-
-            }
-
-            // NOTES SCREEN
-            composable(
-                route = "notes/{uid}/{displayName}/{email}",
-                arguments = listOf(
-                    navArgument("uid") { type = NavType.StringType },
-                    navArgument("displayName") { type = NavType.StringType },
-                    navArgument("email") { type = NavType.StringType }
-                )
-            ) { backStack ->
-
-                val uid = backStack.arguments?.getString("uid") ?: ""
-                val displayName = backStack.arguments?.getString("displayName") ?: ""
-                val email = backStack.arguments?.getString("email") ?: ""
-
-                NotesScreen(
-                    username = uid,
-                    onEdit = { noteId -> nav.navigate("editNote/$uid/$noteId") },
-                    onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
-                    onOpenTimer = { nav.navigate("timer/$uid/$displayName/$email") },
-                    onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
-                    onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
-                )
-            }
-
-            // EDIT NOTE SCREEN
-            composable(
-                route = "editNote/{uid}/{noteId}",
-                arguments = listOf(
-                    navArgument("uid") { type = NavType.StringType },
-                    navArgument("noteId") { type = NavType.IntType }
-                )
-            ) { backStack ->
-
-                val uid = backStack.arguments!!.getString("uid")!!
-                val noteId = backStack.arguments!!.getInt("noteId")
-
-                EditNoteScreen(
-                    username = uid,
-                    noteId = noteId,
-                    onBack = { nav.popBackStack() }
-                )
-            }
-
-            // PROFILE SCREEN
-            composable(
-                route = "profile/{uid}/{displayName}/{email}",
-                arguments = listOf(
-                    navArgument("uid") { type = NavType.StringType },
-                    navArgument("displayName") { type = NavType.StringType },
-                    navArgument("email") { type = NavType.StringType }
-                )
-            ) { backStack ->
-
-                val displayName = backStack.arguments?.getString("displayName") ?: ""
-                val email = backStack.arguments?.getString("email") ?: ""
-
-                ProfileScreen(
-                    displayName = displayName,
-                    email = email,
-                    onBack = { nav.popBackStack() },
+                    onOpenProfile = { nav.navigate("profile/$uid/$name/$email") },
+                    onOpenTimer = { nav.navigate("timer/$uid/$name/$email") },
+                    onOpenQuiz = { nav.navigate("quiz/$uid/$name/$email") },
+                    onOpenMotivation = { nav.navigate("motivation/$uid/$name/$email") },
                     onLogout = {
                         scope.launch { loginPrefs.logout() }
+                        FirebaseAuth.getInstance().signOut()
                         nav.navigate("login") {
                             popUpTo(0) { inclusive = true }
                         }
                     }
                 )
             }
-            // QUIZ SCREEN
+
+            // ---------- GROUPS ----------
             composable(
-                route = "quiz/{uid}/{displayName}/{email}",
+                "groups/{uid}/{displayName}/{email}",
                 arguments = listOf(
                     navArgument("uid") { type = NavType.StringType },
                     navArgument("displayName") { type = NavType.StringType },
                     navArgument("email") { type = NavType.StringType }
                 )
-            ) { backStack ->
+            ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+                val email = entry.arguments!!.getString("email")!!
 
-                val uid = backStack.arguments?.getString("uid") ?: ""
-                val displayName = backStack.arguments?.getString("displayName") ?: ""
-                val email = backStack.arguments?.getString("email") ?: ""
+                GroupsScreen(
+                    uid = uid,
+                    displayName = name,
+                    onOpenGroup = { groupId ->
+                        nav.navigate("groupChat/$groupId/$uid/$name")
+                    },
+                    onNewDirectMessage = {
+                        nav.navigate("dmSearch/$uid/$name")
+                    },
+                    onBack = { nav.popBackStack() }
+                )
+            }
+
+            // ---------- NEW DM SEARCH ----------
+            composable(
+                "dmSearch/{uid}/{displayName}",
+                arguments = listOf(
+                    navArgument("uid") { type = NavType.StringType },
+                    navArgument("displayName") { type = NavType.StringType }
+                )
+            ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+
+                DirectMessageSearchScreen(
+                    myUid = uid,
+                    myDisplayName = name,
+                    onBack = { nav.popBackStack() },
+                    onOpenChat = { groupId ->
+                        nav.navigate("groupChat/$groupId/$uid/$name")
+                    }
+                )
+            }
+
+            // ---------- GROUP CHAT ----------
+            composable(
+                "groupChat/{groupId}/{uid}/{displayName}",
+                arguments = listOf(
+                    navArgument("groupId") { type = NavType.StringType },
+                    navArgument("uid") { type = NavType.StringType },
+                    navArgument("displayName") { type = NavType.StringType }
+                )
+            ) { entry ->
+                val groupId = entry.arguments!!.getString("groupId")!!
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+
+                GroupChatScreen(
+                    groupId = groupId,
+                    uid = uid,
+                    displayName = name,
+                    onBack = { nav.popBackStack() }
+                )
+            }
+
+            // ---------- NOTES ----------
+            composable(
+                "notes/{uid}/{displayName}/{email}",
+                arguments = listOf(
+                    navArgument("uid") { type = NavType.StringType },
+                    navArgument("displayName") { type = NavType.StringType },
+                    navArgument("email") { type = NavType.StringType }
+                )
+            ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+                val email = entry.arguments!!.getString("email")!!
+
+                NotesScreen(
+                    username = uid,
+                    onEdit = { noteId -> nav.navigate("editNote/$uid/$noteId") },
+                    onOpenHome = { goHome(uid, name, email) },
+                    onOpenTimer = { nav.navigate("timer/$uid/$name/$email") },
+                    onOpenQuiz = { nav.navigate("quiz/$uid/$name/$email") },
+                    onOpenMotivation = { nav.navigate("motivation/$uid/$name/$email") }
+                )
+            }
+
+            // ---------- EDIT NOTE ----------
+            composable(
+                "editNote/{uid}/{noteId}",
+                arguments = listOf(
+                    navArgument("uid") { type = NavType.StringType },
+                    navArgument("noteId") { type = NavType.IntType }
+                )
+            ) { entry ->
+                EditNoteScreen(
+                    username = entry.arguments!!.getString("uid")!!,
+                    noteId = entry.arguments!!.getInt("noteId"),
+                    onBack = { nav.popBackStack() }
+                )
+            }
+
+            // ---------- PROFILE ----------
+            composable(
+                "profile/{uid}/{displayName}/{email}",
+                arguments = listOf(
+                    navArgument("uid") { type = NavType.StringType },
+                    navArgument("displayName") { type = NavType.StringType },
+                    navArgument("email") { type = NavType.StringType }
+                )
+            ) { entry ->
+                ProfileScreen(
+                    displayName = entry.arguments?.getString("displayName") ?: "",
+                    email = entry.arguments?.getString("email") ?: "",
+                    onBack = { nav.popBackStack() }
+                )
+            }
+
+            // ---------- QUIZ ----------
+            composable(
+                "quiz/{uid}/{displayName}/{email}",
+                arguments = listOf(
+                    navArgument("uid") { type = NavType.StringType },
+                    navArgument("displayName") { type = NavType.StringType },
+                    navArgument("email") { type = NavType.StringType }
+                )
+            ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+                val email = entry.arguments!!.getString("email")!!
 
                 QuizScreen(
                     uid = uid,
-                    displayName = displayName,
+                    displayName = name,
                     email = email,
-                    onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
-                    onOpenTimer = { nav.navigate("timer/$uid/$displayName/$email") },
-                    onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") },
-                    onOpenQuiz = { /* already here */ }
+                    onOpenHome = { goHome(uid, name, email) },
+                    onOpenTimer = { nav.navigate("timer/$uid/$name/$email") },
+                    onOpenMotivation = { nav.navigate("motivation/$uid/$name/$email") },
+                    onOpenQuiz = {}
                 )
             }
 
-
-            // MOTIVATION SCREEN
+            // ---------- MOTIVATION ----------
             composable(
-                route = "motivation/{uid}/{displayName}/{email}",
+                "motivation/{uid}/{displayName}/{email}",
                 arguments = listOf(
                     navArgument("uid") { type = NavType.StringType },
                     navArgument("displayName") { type = NavType.StringType },
                     navArgument("email") { type = NavType.StringType }
                 )
-            ) { backStack ->
-
-                val uid = backStack.arguments?.getString("uid") ?: ""
-                val displayName = backStack.arguments?.getString("displayName") ?: ""
-                val email = backStack.arguments?.getString("email") ?: ""
+            ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+                val email = entry.arguments!!.getString("email")!!
 
                 MotivationScreen(
                     uid = uid,
-                    onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
-                    onOpenTimer = { nav.navigate("timer/$uid/$displayName/$email") },
-                    onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
-                    onOpenMotivation = { /* already here, do nothing */ },
-                    onOpenFavourites = { nav.navigate("favourites/$uid/$displayName/$email") }
+                    onOpenHome = { goHome(uid, name, email) },
+                    onOpenTimer = { nav.navigate("timer/$uid/$name/$email") },
+                    onOpenQuiz = { nav.navigate("quiz/$uid/$name/$email") },
+                    onOpenMotivation = {},
+                    onOpenFavourites = { nav.navigate("favourites/$uid/$name/$email") }
                 )
             }
 
-            // FAVOURITES SCREEN
+            // ---------- FAVOURITES ----------
             composable(
-                route = "favourites/{uid}/{displayName}/{email}",
+                "favourites/{uid}/{displayName}/{email}",
                 arguments = listOf(
                     navArgument("uid") { type = NavType.StringType },
                     navArgument("displayName") { type = NavType.StringType },
                     navArgument("email") { type = NavType.StringType }
                 )
-            ) { backStack ->
-
-                val uid = backStack.arguments?.getString("uid") ?: ""
-                val displayName = backStack.arguments?.getString("displayName") ?: ""
-                val email = backStack.arguments?.getString("email") ?: ""
+            ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+                val email = entry.arguments!!.getString("email")!!
 
                 FavouriteScreen(
                     uid = uid,
-                    displayName = displayName,
+                    displayName = name,
                     email = email,
-                    onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
-                    onOpenTimer = { nav.navigate("timer/$uid/$displayName/$email") },
-                    onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
-                    onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") }
+                    onOpenHome = { goHome(uid, name, email) },
+                    onOpenTimer = { nav.navigate("timer/$uid/$name/$email") },
+                    onOpenQuiz = { nav.navigate("quiz/$uid/$name/$email") },
+                    onOpenMotivation = { nav.navigate("motivation/$uid/$name/$email") }
                 )
             }
 
-            // Timer Screen
+            // ---------- TIMER ----------
             composable(
-                route = "timer/{uid}/{displayName}/{email}",
+                "timer/{uid}/{displayName}/{email}",
                 arguments = listOf(
                     navArgument("uid") { type = NavType.StringType },
                     navArgument("displayName") { type = NavType.StringType },
                     navArgument("email") { type = NavType.StringType }
                 )
-            ) { backStack ->
-                val uid = backStack.arguments?.getString("uid") ?: ""
-                val displayName = backStack.arguments?.getString("displayName") ?: ""
-                val email = backStack.arguments?.getString("email") ?: ""
+            ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+                val email = entry.arguments!!.getString("email")!!
 
                 TimerScreen(
                     nav = nav,
                     viewModel = timerViewModel,
                     uid = uid,
-                    displayName = displayName,
+                    displayName = name,
                     email = email,
-                    onOpenHome = { nav.navigate("home/$uid/$displayName/$email") },
-                    onOpenQuiz = { nav.navigate("quiz/$uid/$displayName/$email") },
-                    onOpenMotivation = { nav.navigate("motivation/$uid/$displayName/$email") },
-                    onOpenTimer = { /* Already here */ }
+                    onOpenHome = { goHome(uid, name, email) },
+                    onOpenQuiz = { nav.navigate("quiz/$uid/$name/$email") },
+                    onOpenMotivation = { nav.navigate("motivation/$uid/$name/$email") },
+                    onOpenTimer = {}
                 )
             }
 
+            // ---------- FORGOT PASSWORD ----------
             composable("forgotPassword") {
-                ForgotPasswordScreen(
-                    onBackToLogin = { nav.popBackStack() }
-                )
+                ForgotPasswordScreen(onBackToLogin = { nav.popBackStack() })
             }
         }
-        // Removed condition to force show if running
+
+        // Floating overlay timer
         FloatingTimer(timerViewModel = timerViewModel)
     }
 }

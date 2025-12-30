@@ -1,14 +1,20 @@
 package np.ict.mad.studybuddy.feature.notes
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import np.ict.mad.studybuddy.core.storage.FirestoreNote
+import np.ict.mad.studybuddy.core.storage.NoteCategory
 import np.ict.mad.studybuddy.core.storage.NotesFirestore
 import np.ict.mad.studybuddy.feature.home.BottomNavBar
 import np.ict.mad.studybuddy.feature.home.BottomNavTab
@@ -16,48 +22,64 @@ import np.ict.mad.studybuddy.feature.home.BottomNavTab
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesScreen(
-    username: String,       // Firebase UID
+    username: String,       // UID
     onEdit: (Int) -> Unit,
     onOpenHome: () -> Unit,
     onOpenTimer: () -> Unit,
-    onOpenQuiz : () -> Unit,
+    onOpenQuiz: () -> Unit,
     onOpenMotivation: () -> Unit
 ) {
-
-    // My Firestore helper class to load and save notes
     val notesDb = remember { NotesFirestore() }
-
-    // I use this scope to run Firestore operations in the background (e.g. add/update notes).
-    // 'rememberCoroutineScope' makes sure the coroutine follows the NotesScreen lifecycle.
     val scope = rememberCoroutineScope()
 
     var notes by remember { mutableStateOf<List<FirestoreNote>>(emptyList()) }
 
-    // Load notes when screen shows
+    // categories (subjects)
+    var categories by remember { mutableStateOf<List<NoteCategory>>(emptyList()) }
+    var selectedCategoryId by remember { mutableStateOf("ALL") } // ALL or categoryId
+
+    // full-screen add note state
+    var showAddNote by remember { mutableStateOf(false) }
+    var newTitle by remember { mutableStateOf("") }
+    var newContent by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf<NoteCategory?>(null) }
+
+    // manage subjects dialog
+    var showManageSubjects by remember { mutableStateOf(false) }
+
     LaunchedEffect(username) {
         notes = notesDb.getNotes(username)
+        categories = notesDb.getCategories(username)
     }
 
-    // for add new note
-    var showAddDialog by remember { mutableStateOf(false) }
-    var newTitle by remember { mutableStateOf("") }
-    var newContent by remember  { mutableStateOf("") }
+    // GUARANTEED reset: whenever Add Note opens, force Uncategorized
+    LaunchedEffect(showAddNote) {
+        if (showAddNote) {
+            selectedCategory = null
+        }
+    }
+
+    val filteredNotes = remember(notes, selectedCategoryId) {
+        if (selectedCategoryId == "ALL") notes
+        else notes.filter { it.categoryId == selectedCategoryId }
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Notes Manager") }) },
 
-        // Floating "+" button. When clicked, I reset the input fields and open the Add Note dialog.
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
                     newTitle = ""
                     newContent = ""
-                    showAddDialog = true
+                    selectedCategory = null   // default to Uncategorized
+                    showAddNote = true
                 }
-            ) { Text("+") }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Note")
+            }
         },
 
-        // Bottom navigation to switch between main features
         bottomBar = {
             BottomNavBar(
                 selectedTab = BottomNavTab.HOME,
@@ -72,24 +94,81 @@ fun NotesScreen(
         Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .padding(24.dp)
+                .padding(16.dp)
                 .fillMaxSize()
         ) {
 
             Text("Your Notes", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(12.dp))
+
+            // Subject filter chips
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = selectedCategoryId == "ALL",
+                    onClick = { selectedCategoryId = "ALL" },
+                    label = { Text("All") }
+                )
+
+                categories.forEach { cat ->
+                    FilterChip(
+                        selected = selectedCategoryId == cat.id,
+                        onClick = { selectedCategoryId = cat.id },
+                        label = { Text(cat.name) }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Manage Subjects UI
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showManageSubjects = true }
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Settings, contentDescription = null)
+                    Spacer(Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Manage subjects", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Rename or delete your subjects",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text("Edit", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
             Spacer(Modifier.height(16.dp))
 
-            if (notes.isEmpty()) {
-                Text("You have no notes yet. Tap '+' to add one.")
+            if (filteredNotes.isEmpty()) {
+                Text(
+                    if (notes.isEmpty())
+                        "You have no notes yet. Tap '+' to add one."
+                    else
+                        "No notes in this subject yet."
+                )
             } else {
+                val sorted = filteredNotes.sortedByDescending { it.createdAt }
 
-                // Display each note inside a clickable Card
-                notes.forEach { note ->
+                sorted.forEach { note ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
-                            .clickable { onEdit(note.id) }, // Go to EditNoteScreen
+                            .clickable { onEdit(note.id) },
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
                         Column(
@@ -97,11 +176,18 @@ fun NotesScreen(
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
-                            // Note title
+                            Text(
+                                text = note.categoryName.ifBlank { "Uncategorized" },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
                             Text(note.title, style = MaterialTheme.typography.titleMedium)
+
                             Spacer(Modifier.height(6.dp))
 
-                            // Content for notes preview (max 2 lines)
                             Text(
                                 text = note.content,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -114,71 +200,85 @@ fun NotesScreen(
         }
     }
 
-    // popup dialog for adding a new note
-    if (showAddDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddDialog = false },
-            title = { Text("Add New Note") },
-            text = {
-                Column {
-                    // Title input field
-                    OutlinedTextField(
-                        value = newTitle,
-                        onValueChange = { newTitle = it },
-                        label = { Text("Title") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+    // Full-screen Add Note (force fresh instance)
+    if (showAddNote) {
+        key(showAddNote) {
+            AddNoteFullScreen(
+                title = newTitle,
+                content = newContent,
+                onTitleChange = { newTitle = it },
+                onContentChange = { newContent = it },
 
-                    Spacer(Modifier.height(12.dp))
-
-                    // Content input field
-                    OutlinedTextField(
-                        value = newContent,
-                        onValueChange = { newContent = it },
-                        label = { Text("Content") },
-                        maxLines = 10,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(150.dp)
-                    )
-                }
-            },
-
-            // Confirm button: save note to Firestore
-            confirmButton = {
-                Button(
-                    onClick = {
-                        scope.launch {
-
-                            // Auto-generate ID if no notes yet, use 1, else take max ID + 1
-                            val newId = if (notes.isEmpty()) 1 else notes.maxOf { it.id } + 1
-
-                            // Create note object
-                            notesDb.addNote(
-                                username,
-                                FirestoreNote(
-                                    id = newId,
-                                    title = newTitle.ifBlank { "Untitled" },
-                                    content = newContent
-                                )
-                            )
-
-                            // Refresh notes after adding
-                            notes = notesDb.getNotes(username)
-                        }
-
-                        // Close dialog
-                        showAddDialog = false
+                categories = categories,
+                selectedCategory = selectedCategory,
+                onSelectCategory = { selectedCategory = it },
+                onAddNewCategory = { name ->
+                    scope.launch {
+                        val created = notesDb.addCategory(username, name)
+                        categories = notesDb.getCategories(username)
+                        selectedCategory = created
                     }
-                ) {
-                    Text("Add")
+                },
+
+                onCancel = {
+                    showAddNote = false
+                    selectedCategory = null // reset for next open
+                },
+                onSave = {
+                    scope.launch {
+                        val newId = if (notes.isEmpty()) 1 else notes.maxOf { it.id } + 1
+                        val cat = selectedCategory
+
+                        notesDb.addNote(
+                            username,
+                            FirestoreNote(
+                                id = newId,
+                                title = newTitle.ifBlank { "Untitled" },
+                                content = newContent,
+                                categoryId = cat?.id ?: "",
+                                categoryName = cat?.name ?: "Uncategorized"
+                            )
+                        )
+
+                        notes = notesDb.getNotes(username)
+                        categories = notesDb.getCategories(username)
+                    }
+                    showAddNote = false
+                    selectedCategory = null // reset for next open
+                }
+            )
+        }
+    }
+
+    // Manage Subjects dialog (delete + rename)
+    if (showManageSubjects) {
+        ManageSubjectsDialog(
+            categories = categories,
+            onDismiss = { showManageSubjects = false },
+            onDelete = { cat ->
+                scope.launch {
+                    notesDb.deleteCategoryAndUnassignNotes(username, cat.id)
+
+                    categories = notesDb.getCategories(username)
+                    notes = notesDb.getNotes(username)
+
+                    if (selectedCategoryId == cat.id) selectedCategoryId = "ALL"
                 }
             },
+            onRename = { cat, newName ->
+                val clean = newName.trim()
+                if (clean.isBlank()) return@ManageSubjectsDialog
 
-            // Cancel button just closes the dialog
-            dismissButton = {
-                OutlinedButton(onClick = { showAddDialog = false }) {
-                    Text("Cancel")
+                // Optimistic UI update
+                categories = categories.map { c -> if (c.id == cat.id) c.copy(name = clean) else c }
+                notes = notes.map { n -> if (n.categoryId == cat.id) n.copy(categoryName = clean) else n }
+
+                scope.launch {
+                    notesDb.renameCategory(username, cat.id, clean)
+                    notesDb.updateNotesCategoryName(username, cat.id, clean)
+
+                    categories = notesDb.getCategories(username)
+                    notes = notesDb.getNotes(username)
                 }
             }
         )
