@@ -23,6 +23,7 @@ import np.ict.mad.studybuddy.feature.notes.EditNoteScreen
 import np.ict.mad.studybuddy.feature.notes.NotesScreen
 import np.ict.mad.studybuddy.feature.profile.ProfileScreen
 import np.ict.mad.studybuddy.feature.quiz.QuizScreen
+import np.ict.mad.studybuddy.feature.reflection.StudyReflectionScreen
 import np.ict.mad.studybuddy.feature.timer.*
 
 @Composable
@@ -291,6 +292,24 @@ fun AppNav() {
                     onOpenTimer = { nav.navigate("timer/$uid/$name/$email") },
                     onOpenMotivation = { nav.navigate("motivation/$uid/$name/$email") },
                     onOpenQuiz = {}
+                )
+            }
+
+            // ---------- STUDY REFLECTION ----------
+            composable(
+                "reflection/{uid}",
+                arguments = listOf(
+                    navArgument("uid") { type = NavType.StringType }
+                )
+            ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+
+                StudyReflectionScreen(
+                    uid = uid,
+                    onSave = {
+
+                    },
+                    onBack = { nav.popBackStack() }
                 )
             }
 

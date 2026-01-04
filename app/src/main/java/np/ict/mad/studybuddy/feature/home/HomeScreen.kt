@@ -107,6 +107,10 @@ fun HomeScreen(
                     scope.launch { drawerState.close() }
                     onOpenMotivation()
                 },
+                onOpenReflection = {
+                    scope.launch { drawerState.close() }
+                    nav.navigate("reflection/$uid")
+                },
                 onOpenProfile = {
                     scope.launch { drawerState.close() }
                     onOpenProfile()
@@ -344,6 +348,7 @@ fun AppDrawerContent(
     onOpenTimer: () -> Unit,
     onOpenQuiz: () -> Unit,
     onOpenMotivation: () -> Unit,
+    onOpenReflection: () -> Unit,
     onOpenProfile: () -> Unit,
     onLogout: (() -> Unit)? = null
 ) {
@@ -387,6 +392,7 @@ fun AppDrawerContent(
             DrawerItem("Timer", Icons.Default.Timer, onOpenTimer)
             DrawerItem("Quiz", Icons.Default.School, onOpenQuiz)
             DrawerItem("Motivation", Icons.Default.Star, onOpenMotivation)
+            DrawerItem("Study Reflection", Icons.Default.EditNote, onOpenReflection )
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider()
