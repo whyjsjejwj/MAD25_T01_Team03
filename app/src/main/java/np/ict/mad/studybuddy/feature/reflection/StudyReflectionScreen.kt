@@ -21,20 +21,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudyReflectionScreen(
     uid: String,
-    onSave: () -> Unit,
     onBack: () -> Unit
 ) {
-    var subject by remember { mutableStateOf("") }
-    var reflection by remember { mutableStateOf("") }
-    var mood by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    val reflectionDb = remember { StudyReflectionFirestore() }
+
+    var subject by remember { mutableStateOf("") } // subject the reflection is about
+    var reflection by remember { mutableStateOf("") } // contents of reflection
+    var mood by remember { mutableStateOf("") } // how the user felt when reflecting
+    var saving by remember { mutableStateOf(false) } // to save it to firebase properly
 
     Scaffold(
         topBar = {
@@ -64,18 +69,18 @@ fun StudyReflectionScreen(
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
+            // Text boxes for the reflection (3 questions only)
             OutlinedTextField(
                 value = subject,
                 onValueChange = { subject = it },
-                label = { Text("What did you study today?") },
+                label = { Text("What did you study today? (E.g. Math, Biology)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = reflection,
                 onValueChange = { reflection = it },
-                label = { Text("How did the session go?") },
+                label = { Text("What did you do/learn in this study session?") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 4
             )
@@ -83,18 +88,36 @@ fun StudyReflectionScreen(
             OutlinedTextField(
                 value = mood,
                 onValueChange = { mood = it },
-                label = { Text("How did you feel?") },
+                label = { Text("How do you feel after the study session ended?") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Button(
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !saving,
                 onClick = {
-                    onSave()
-                    onBack()
+                    saving = true
+
+                    // saving of reflection to firebase
+                    scope.launch{
+                        try{
+                            reflectionDb.addReflection(
+                                StudyReflection(
+                                    uid = uid,
+                                    subject = subject,
+                                    reflection = reflection,
+                                    mood = mood
+                                )
+                            )
+                            saving = false
+                            onBack()
+                        }catch (e: Exception) {
+                            saving = false
+                        }
+                    }
                 }
             ) {
-                Text("Save Reflection")
+                Text(if (saving) "Saving..." else "Save Reflection")
             }
         }
     }

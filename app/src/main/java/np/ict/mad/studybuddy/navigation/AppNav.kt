@@ -306,9 +306,6 @@ fun AppNav() {
 
                 StudyReflectionScreen(
                     uid = uid,
-                    onSave = {
-
-                    },
                     onBack = { nav.popBackStack() }
                 )
             }
