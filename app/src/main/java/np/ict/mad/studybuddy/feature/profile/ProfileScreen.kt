@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,17 +21,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import np.ict.mad.studybuddy.feature.auth.LoginPreferences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    uid: String,
     displayName: String,
     email: String,
     onBack: () -> Unit,
     onEdit: () -> Unit = {},
-    onChangePassword: () -> Unit = {}
+    onChangePassword: () -> Unit = {},
+    onChangeEducationLevel: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -40,9 +46,65 @@ fun ProfileScreen(
     // coroutine scope tied to this screen (so it cancels when I leave)
     val scope = rememberCoroutineScope()
 
+    val firestore = remember { FirebaseFirestore.getInstance() } // ✅ NEW
+
     // reading the saved theme from DataStore (Flow -> UI updates automatically)
     val currentTheme by prefs.theme.collectAsState(initial = "system")
     var showThemeDialog by remember { mutableStateOf(false) }
+
+    var educationLevel by remember { mutableStateOf("Loading...") }
+    var eduLoading by remember { mutableStateOf(true) }
+
+    var showEduDialog by remember { mutableStateOf(false) }
+    var eduSaving by remember {mutableStateOf(false)}
+    var eduError by remember {mutableStateOf<String?>(null)}
+
+    // education levels to change to
+    val eduOptions = listOf(
+        "Unknown",
+        "Primary 3",
+        "Primary 4",
+        "Primary 5",
+        "Primary 6",
+        "Secondary 1",
+        "Secondary 2",
+        "Secondary 3",
+        "Secondary 4",
+        "JC 1",
+        "JC 2",
+        "Poly",
+        "University"
+    )
+
+    LaunchedEffect(uid) {
+        eduLoading = true
+        try {
+            val users = firestore.collection("users")
+            val uidRef = users.document(uid)
+            val uidDoc = uidRef.get().await()
+
+            val existingEmail = uidDoc.getString("email").orEmpty()
+            val existingName = uidDoc.getString("displayName").orEmpty()
+            val existingEdu = uidDoc.getString("educationLevel")
+
+            val safeEdu = existingEdu?.takeIf { it.isNotBlank() } ?: "Unknown"
+            educationLevel = safeEdu
+
+            uidRef.set(
+                mapOf(
+                    "email" to email.trim(),
+                    "displayName" to displayName.trim(),
+                    "educationLevel" to safeEdu
+                ),
+                SetOptions.merge()
+            ).await()
+        } catch (e: Exception) {
+            // If something fails, still show a safe default
+            educationLevel = "Unknown"
+        } finally {
+            eduLoading = false
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -93,8 +155,30 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            if (eduLoading) {
+                Text("Education Level: Loading...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                Text(
+                    "Education Level: $educationLevel",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(Modifier.height(28.dp))
+
             // Account Section
             SettingsSectionTitle("Account")
+
+            ProfileOption(
+                icon = Icons.Default.School,
+                text = if (eduLoading) "Education Level (Loading...)" else "Education Level ($educationLevel)",
+                onClick = {
+                    if (!eduLoading) {
+                        eduError = null
+                        showEduDialog = true
+                    }
+                }
+            )
 
             ProfileOption(
                 icon = Icons.Default.Edit,
@@ -125,6 +209,111 @@ fun ProfileScreen(
                 onClick = {} // not implemented yet
             )
         }
+    }
+
+    // Education Level dialog
+    if (showEduDialog) {
+        var tempSelection by remember(educationLevel) { mutableStateOf(educationLevel) }
+        var expanded by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = {
+                if (!eduSaving) showEduDialog = false
+            },
+            title = { Text("Set Education Level") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                    Text(
+                        "This will be used to filter quiz questions based on your level.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded }
+                    ) {
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            readOnly = true,
+                            value = tempSelection,
+                            onValueChange = {},
+                            label = { Text("Education Level") }
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            eduOptions.forEach { opt ->
+                                DropdownMenuItem(
+                                    text = { Text(opt) },
+                                    onClick = {
+                                        tempSelection = opt
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    if (eduError != null) {
+                        Text(eduError!!, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !eduSaving,
+                    onClick = {
+                        eduSaving = true
+                        eduError = null
+
+                        // debug
+                        //android.util.Log.d("EduLevel", "Saving to users/$uid as $tempSelection (email=$email, name=$displayName)")
+
+                        firestore.collection("users")
+                            .document(uid)
+                            .set(
+                                mapOf(
+                                    "educationLevel" to tempSelection,
+                                    "email" to email.trim(),
+                                    "displayName" to displayName.trim()
+                                ),
+                                SetOptions.merge()
+                            )
+                            .addOnSuccessListener {
+                                educationLevel = tempSelection
+                                eduSaving = false
+                                showEduDialog = false
+
+                                // debug
+                                android.util.Log.d("EduLevel", "Saved OK. Now reading back users/$uid ...")
+                                firestore.collection("users").document(uid).get()
+                                    .addOnSuccessListener { doc ->
+                                        android.util.Log.d("EduLevel", "ReadBack users/$uid => ${doc.data}")
+                                    }
+                            }
+                            .addOnFailureListener { e ->
+                                eduSaving = false
+                                eduError = e.message ?: "Failed to save education level."
+                            }
+                    }
+                ) {
+                    Text(if (eduSaving) "Saving..." else "Save")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !eduSaving,
+                    onClick = { showEduDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     // Theme chooser dialog

@@ -264,10 +264,16 @@ fun AppNav() {
                     navArgument("email") { type = NavType.StringType }
                 )
             ) { entry ->
+                val uid = entry.arguments!!.getString("uid")!!
+                val name = entry.arguments!!.getString("displayName")!!
+                val email = entry.arguments!!.getString("email")!!
+
                 ProfileScreen(
-                    displayName = entry.arguments?.getString("displayName") ?: "",
-                    email = entry.arguments?.getString("email") ?: "",
-                    onBack = { nav.popBackStack() }
+                    uid = uid,
+                    displayName = name,
+                    email = email,
+                    onBack = { nav.popBackStack() },
+                    onChangeEducationLevel = { nav.navigate("editEducation/$uid") }
                 )
             }
 

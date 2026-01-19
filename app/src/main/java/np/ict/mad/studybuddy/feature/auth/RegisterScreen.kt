@@ -23,7 +23,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import np.ict.mad.studybuddy.R
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
@@ -43,6 +43,25 @@ fun RegisterScreen(
 
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var loading by rememberSaveable { mutableStateOf(false) }
+
+    // education level options users can choose from
+    val educationOptions = listOf(
+        "Primary 3",
+        "Primary 4",
+        "Primary 5",
+        "Primary 6",
+        "Secondary 1",
+        "Secondary 2",
+        "Secondary 3",
+        "Secondary 4",
+        "JC 1",
+        "JC 2",
+        "Poly",
+        "University"
+    )
+
+    var educationLevel by rememberSaveable { mutableStateOf("") } // store chosen value for education level
+    var eduExpanded by remember { mutableStateOf(false) } // dropdown open/close
 
     // ✅ Match Login gradient
     val gradient = Brush.verticalGradient(
@@ -106,6 +125,40 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                 )
+
+                Spacer(Modifier.height(12.dp))
+
+                // for the change education level for the users
+                ExposedDropdownMenuBox(
+                    expanded = eduExpanded,
+                    onExpandedChange = { eduExpanded = !eduExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = educationLevel,
+                        onValueChange = {}, // user selects from menu
+                        readOnly = true,
+                        label = { Text("Education Level") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = eduExpanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = eduExpanded,
+                        onDismissRequest = { eduExpanded = false }
+                    ) {
+                        educationOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    educationLevel = option
+                                    eduExpanded = false
+                                    error = null
+                                }
+                            )
+                        }
+                    }
+                }
 
                 Spacer(Modifier.height(12.dp))
 
@@ -180,6 +233,10 @@ fun RegisterScreen(
                             error = "Passwords do not match."
                             return@Button
                         }
+                        if (educationLevel.isBlank()) {
+                            error = "Please select your education level."
+                            return@Button
+                        }
 
                         scope.launch {
                             loading = true
@@ -190,7 +247,8 @@ fun RegisterScreen(
 
                                 val profile = mapOf(
                                     "email" to email.trim(),
-                                    "displayName" to displayName.trim()
+                                    "displayName" to displayName.trim(),
+                                    "educationLevel" to educationLevel
                                 )
 
                                 firestore.collection("users")
