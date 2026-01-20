@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Button
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.tasks.await
 import np.ict.mad.studybuddy.feature.home.BottomNavBar
 import np.ict.mad.studybuddy.feature.home.BottomNavTab
 
@@ -27,6 +28,28 @@ fun QuizScreen(
 ) {
     // Firestore access class
     val quizDb = remember { QuizStorage() }
+
+    // To retrieve user profile data
+    val firestore = remember { com.google.firebase.firestore.FirebaseFirestore.getInstance() }
+
+    // Stores the education level from Firebase
+    var educationLevel by remember { mutableStateOf<String?>(null) }
+
+    // for loading when fetching the education level
+    var eduLoading by remember { mutableStateOf(true) }
+
+    // fetches education level when screen opens so the qns can be filtered based on education level
+    LaunchedEffect(uid) {
+        eduLoading = true
+        try {
+            val doc = firestore.collection("users").document(uid).get().await()
+            educationLevel = doc.getString("educationLevel") ?: "Unknown"
+        } catch (e: Exception) {
+            educationLevel = "Unknown"
+        } finally {
+            eduLoading = false
+        }
+    }
 
     // Controls which part of the quiz the user is at (Home, Category, Results)
     var stage by remember { mutableStateOf("home") }
@@ -74,6 +97,36 @@ fun QuizScreen(
                 return@Box
             }
 
+            // shows loading icon when waiting to fetch education level
+            if (eduLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                return@Box
+            }
+
+            val edu = educationLevel ?: "Unknown"
+            val allowedSubjects = allowedSubjectsFor(edu)
+
+            // disables quiz if user doesnt have education level
+            if (allowedSubjects.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Quiz Locked", style = MaterialTheme.typography.headlineSmall)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Please set your Education Level in Profile first.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(Modifier.height(20.dp))
+                        Button(onClick = onOpenHome, modifier = Modifier.fillMaxWidth()) {
+                            Text("Go Back")
+                        }
+                    }
+                }
+                return@Box
+            }
+
             when (stage) {
 
                 // -------------------------
@@ -107,7 +160,7 @@ fun QuizScreen(
                         loading = true // shows the loading icon
                         if (subject == null) {
                             // Load ALL questions
-                            quizDb.getAllQuestions { list ->
+                            quizDb.getAllQuestions(edu) { list ->
                                 selectedQuestions = list.shuffled().take(3)
                                 loading = false
                                 stage = "question"
@@ -117,7 +170,7 @@ fun QuizScreen(
                             }
                         } else {
                             // load questions by subject
-                            quizDb.getQuestions(subject) { list ->
+                            quizDb.getQuestions(subject, edu) { list ->
                                 selectedQuestions = list.shuffled().take(3)
                                 loading = false
                                 stage = "question"
@@ -135,16 +188,23 @@ fun QuizScreen(
                     ) {
                         Text("Choose Category", style = MaterialTheme.typography.headlineLarge)
 
-                        Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory("math") }) {
-                            Text("Math")
+                        // only shows categories allowed for the education level
+                        if ("math" in allowedSubjects) {
+                            Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory("math") }) {
+                                Text("Math")
+                            }
                         }
 
-                        Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory("biology") }) {
-                            Text("Biology")
+                        if ("biology" in allowedSubjects) {
+                            Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory("biology") }) {
+                                Text("Biology")
+                            }
                         }
 
-                        Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory("geography") }) {
-                            Text("Geography")
+                        if ("geography" in allowedSubjects) {
+                            Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory("geography") }) {
+                                Text("Geography")
+                            }
                         }
 
                         Button(modifier = Modifier.fillMaxWidth(), onClick = { loadCategory(null) }) {

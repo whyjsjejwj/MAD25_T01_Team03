@@ -46,7 +46,7 @@ fun ProfileScreen(
     // coroutine scope tied to this screen (so it cancels when I leave)
     val scope = rememberCoroutineScope()
 
-    val firestore = remember { FirebaseFirestore.getInstance() } // ✅ NEW
+    val firestore = remember { FirebaseFirestore.getInstance() } // to retrieve the user profile data
 
     // reading the saved theme from DataStore (Flow -> UI updates automatically)
     val currentTheme by prefs.theme.collectAsState(initial = "system")
@@ -59,7 +59,7 @@ fun ProfileScreen(
     var eduSaving by remember {mutableStateOf(false)}
     var eduError by remember {mutableStateOf<String?>(null)}
 
-    // education levels to change to
+    // education levels the users can change to
     val eduOptions = listOf(
         "Unknown",
         "Primary 3",
