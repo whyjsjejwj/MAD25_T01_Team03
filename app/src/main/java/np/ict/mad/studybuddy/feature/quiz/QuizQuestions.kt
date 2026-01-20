@@ -30,9 +30,7 @@ fun allowedSubjectsFor(educationLevel: String): List<String> {
         "Secondary 4" -> listOf("math", "biology", "geography")
 
         "JC 1",
-        "JC 2",
-        "Poly",
-        "University" -> listOf("math", "biology", "geography")
+        "JC 2" -> listOf("math", "biology", "geography")
 
         else -> emptyList() // makes it Unknown which will block the quiz
     }

@@ -72,8 +72,6 @@ fun ProfileScreen(
         "Secondary 4",
         "JC 1",
         "JC 2",
-        "Poly",
-        "University"
     )
 
     LaunchedEffect(uid) {

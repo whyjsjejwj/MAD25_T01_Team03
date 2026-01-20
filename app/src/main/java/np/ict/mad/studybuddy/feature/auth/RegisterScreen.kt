@@ -56,8 +56,6 @@ fun RegisterScreen(
         "Secondary 4",
         "JC 1",
         "JC 2",
-        "Poly",
-        "University"
     )
 
     var educationLevel by rememberSaveable { mutableStateOf("") } // store chosen value for education level
