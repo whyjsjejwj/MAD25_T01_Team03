@@ -15,10 +15,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import np.ict.mad.studybuddy.core.storage.MotivationFirestore
 import np.ict.mad.studybuddy.core.storage.QuotesFirestore
 import np.ict.mad.studybuddy.feature.home.BottomNavBar
 import np.ict.mad.studybuddy.feature.home.BottomNavTab
+import np.ict.mad.studybuddy.feature.subscription.SubscriptionScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,16 +32,13 @@ fun MotivationScreen(
     onOpenMotivation: () -> Unit,
     onOpenFavourites: () -> Unit
 ) {
-    // initialize database helpers
     val quotesDb = remember { QuotesFirestore() }
     val motivationDb = remember { MotivationFirestore() }
 
-    // state variables for quotes list
     var quotes by remember { mutableStateOf<List<MotivationItem>>(emptyList()) }
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    var showSubscription by remember { mutableStateOf(false) }
 
-    // --- Daily Habit Checklist ---
-    // hardcoded list of habits
     val habits = listOf(
         "Study at least 25 minutes",
         "Review yesterday’s notes",
@@ -47,30 +46,24 @@ fun MotivationScreen(
         "Plan tomorrow’s task"
     )
 
-    // track which habits are checked (true/false)
     var habitStatus by remember {
         mutableStateOf(habits.associateWith { false })
     }
 
-    // calculate progress for the progress bar
     val completedHabits = habitStatus.values.count { it }
     val totalHabits = habits.size
 
-    // --- Load Quote Data From Firebase ---
-    // fetch data when screen loads
     LaunchedEffect(Unit) {
         quotesDb.getQuotes { list ->
             quotes = list.take(5)
-            selectedIndex = null   // DO NOT auto-select
+            selectedIndex = null
         }
     }
 
-    // helper to get the selected quote object
     val selectedQuote = selectedIndex?.let { idx ->
         quotes.getOrNull(idx)
     }
 
-    // Background
     val gradient = Brush.verticalGradient(
         listOf(Color(0xFFFFFDF7), Color(0xFFFFF7E8))
     )
@@ -93,7 +86,6 @@ fun MotivationScreen(
         }
     ) { innerPadding ->
 
-        // main content column with scrolling
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -109,13 +101,11 @@ fun MotivationScreen(
         )
         {
 
-            // quote selector card component
             QuoteSelectorCard(
                 quotes = quotes,
                 selectedIndex = selectedIndex,
                 onSelect = { selectedIndex = it },
                 selectedQuote = selectedQuote,
-                // logic to save quote to firebase
                 onSave = {
                     if (selectedQuote != null && selectedIndex != null) {
                         motivationDb.addFavourite(uid, selectedQuote)
@@ -125,12 +115,14 @@ fun MotivationScreen(
                 onOpenFavourites = onOpenFavourites
             )
 
-            // daily habits card component
+            ZenSoundPlayer(onUpgrade = { showSubscription = true })
+
+            ConsistencyDashboard(onUpgrade = { showSubscription = true })
+
             DailyChecklistCard(
                 habits = habits,
                 habitStatus = habitStatus,
                 onHabitToggle = { habit ->
-                    // update map state when checkbox is clicked
                     habitStatus = habitStatus.toMutableMap().apply {
                         this[habit] = !(this[habit] ?: false)
                     }
@@ -139,8 +131,18 @@ fun MotivationScreen(
                 totalHabits = totalHabits
             )
 
-            // tips section
             FlashcardTipsSection()
+
+            if (showSubscription) {
+                Dialog(onDismissRequest = { showSubscription = false }) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxSize().padding(vertical = 24.dp)
+                    ) {
+                        SubscriptionScreen(onClose = { showSubscription = false })
+                    }
+                }
+            }
         }
     }
 }
@@ -171,7 +173,6 @@ fun QuoteSelectorCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // loop through quotes and display them
             quotes.forEachIndexed { index, item ->
                 val isSelected = index == selectedIndex
 
@@ -199,7 +200,6 @@ fun QuoteSelectorCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // save button
             Button(
                 onClick = onSave,
                 enabled = selectedQuote != null,
@@ -251,7 +251,6 @@ fun DailyChecklistCard(
 
             Spacer(Modifier.height(8.dp))
 
-            // Progress bar
             LinearProgressIndicator(
                 progress = completedHabits / totalHabits.toFloat(),
                 color = Color(0xFFE7C15A),
@@ -265,7 +264,6 @@ fun DailyChecklistCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // Checkbox list
             habits.forEach { habit ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -305,7 +303,6 @@ fun FlashcardTipsSection() {
 @Composable
 fun FlashcardTip(title: String, desc: String) {
 
-    // state to track if card is flipped
     var flipped by remember { mutableStateOf(false) }
 
     Card(
@@ -317,8 +314,6 @@ fun FlashcardTip(title: String, desc: String) {
         elevation = CardDefaults.cardElevation(3.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
-            // flip logic
             if (!flipped) {
                 Text(title, fontWeight = FontWeight.Bold, color = Color(0xFF7A5633))
                 Text("Tap to reveal →", color = Color.Gray)
