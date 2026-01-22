@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Logout
@@ -26,12 +27,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import np.ict.mad.studybuddy.core.storage.FirestoreNote
 import np.ict.mad.studybuddy.core.storage.NoteCategory
 import np.ict.mad.studybuddy.core.storage.NotesFirestore
+import np.ict.mad.studybuddy.feature.motivation.StudyDashboardDialog
 import np.ict.mad.studybuddy.feature.notes.AddNoteFullScreen
+import np.ict.mad.studybuddy.feature.subscription.SubscriptionManager
+import np.ict.mad.studybuddy.feature.subscription.UserTier
+import np.ict.mad.studybuddy.feature.subscription.SubscriptionScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,13 +55,13 @@ fun HomeScreen(
     val notesDb = remember { NotesFirestore() }
     val scope = rememberCoroutineScope()
 
-    var notes by remember { mutableStateOf<List<FirestoreNote>>(emptyList()) }
+    // --- 1. NEW STATE VARIABLES FOR DASHBOARD ---
+    var showDashboard by remember { mutableStateOf(false) }
+    var showSubscription by remember { mutableStateOf(false) }
 
-    // categories (subjects)
+    var notes by remember { mutableStateOf<List<FirestoreNote>>(emptyList()) }
     var categories by remember { mutableStateOf<List<NoteCategory>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<NoteCategory?>(null) }
-
-    // Full-screen Add Note state
     var showAddNote by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
     var newContent by remember { mutableStateOf("") }
@@ -63,20 +69,15 @@ fun HomeScreen(
     LaunchedEffect(uid) {
         notes = notesDb.getNotes(uid)
         categories = notesDb.getCategories(uid)
-
-        // ✅ Do NOT auto-default to first category.
-        // Leaving selectedCategory = null means "Uncategorized".
         selectedCategory = null
     }
 
-    // ✅ GUARANTEED reset whenever Add Note opens
     LaunchedEffect(showAddNote) {
         if (showAddNote) {
             selectedCategory = null
         }
     }
 
-    // Drawer state
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     ModalNavigationDrawer(
@@ -84,17 +85,14 @@ fun HomeScreen(
         drawerContent = {
             AppDrawerContent(
                 onClose = { scope.launch { drawerState.close() } },
-
                 onOpenNotes = {
                     scope.launch { drawerState.close() }
                     nav.navigate("notes/$uid/$displayName/$email")
                 },
-
                 onOpenGroups = {
                     scope.launch { drawerState.close() }
                     nav.navigate("groups/$uid/$displayName/$email")
                 },
-
                 onOpenTimer = {
                     scope.launch { drawerState.close() }
                     onOpenTimer()
@@ -142,12 +140,23 @@ fun HomeScreen(
                     .padding(16.dp)
             ) {
 
+                // --- 2. CONNECT THE DASHBOARD BUTTON HERE ---
                 HomeTopBar(
-                    onOpenDrawer = { scope.launch { drawerState.open() } }
+                    onOpenDrawer = { scope.launch { drawerState.open() } },
+                    onOpenDashboard = {
+                        // Check if user is GOLD
+                        if (SubscriptionManager.userTier.hasAccess(UserTier.GOLD)) {
+                            showDashboard = true
+                        } else {
+                            // If not, ask to upgrade
+                            showSubscription = true
+                        }
+                    }
                 )
 
                 Spacer(Modifier.height(16.dp))
 
+                // ... (Rest of your existing Home code: Welcome text, SummaryCard, etc.) ...
                 Text(
                     text = "Welcome back, $displayName!",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -156,99 +165,51 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    SummaryCard(
-                        title = "Study Streak",
-                        subtitle = "0 Days",
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    SummaryCard(
-                        title = "Total Notes",
-                        subtitle = "${notes.size} Notes",
-                        modifier = Modifier.weight(1f)
-                    )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SummaryCard(title = "Study Streak", subtitle = "0 Days", modifier = Modifier.weight(1f))
+                    SummaryCard(title = "Total Notes", subtitle = "${notes.size} Notes", modifier = Modifier.weight(1f))
                 }
 
                 Spacer(Modifier.height(24.dp))
 
+                // Your Notes Section...
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "Your Notes",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
+                    Text("Your Notes", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(
-                            onClick = { nav.navigate("notes/$uid/$displayName/$email") }
-                        ) { Text("View All") }
-
-                        IconButton(
-                            onClick = {
-                                newTitle = ""
-                                newContent = ""
-                                selectedCategory = null   // ✅ default to Uncategorized
-                                showAddNote = true
-                            }
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Note")
-                        }
+                        TextButton(onClick = { nav.navigate("notes/$uid/$displayName/$email") }) { Text("View All") }
+                        IconButton(onClick = {
+                            newTitle = ""
+                            newContent = ""
+                            selectedCategory = null
+                            showAddNote = true
+                        }) { Icon(Icons.Default.Add, contentDescription = "Add Note") }
                     }
                 }
 
                 Spacer(Modifier.height(8.dp))
 
                 if (notes.isEmpty()) {
-                    Text(
-                        "No notes yet. Tap + to create one.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("No notes yet. Tap + to create one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     val previewNotes = notes.takeLast(4).reversed()
-
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         previewNotes.forEach { note ->
                             Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { nav.navigate("editNote/$uid/${note.id}") },
+                                modifier = Modifier.fillMaxWidth().clickable { nav.navigate("editNote/$uid/${note.id}") },
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant),
                                 shape = RoundedCornerShape(12.dp),
                                 elevation = CardDefaults.cardElevation(2.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-
-                                    Text(
-                                        text = note.categoryName.ifBlank { "Uncategorized" },
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-
+                                    Text(note.categoryName.ifBlank { "Uncategorized" }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                     Spacer(Modifier.height(4.dp))
-
-                                    Text(
-                                        note.title,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-
+                                    Text(note.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                     Spacer(Modifier.height(4.dp))
-
-                                    Text(
-                                        note.content,
-                                        maxLines = 2,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Text(note.content, maxLines = 2, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -257,7 +218,7 @@ fun HomeScreen(
             }
         }
 
-        // Full-screen Add Note with subject picker
+        // Add Note Screen logic...
         if (showAddNote) {
             key(showAddNote) {
                 AddNoteFullScreen(
@@ -265,7 +226,6 @@ fun HomeScreen(
                     content = newContent,
                     onTitleChange = { newTitle = it },
                     onContentChange = { newContent = it },
-
                     categories = categories,
                     selectedCategory = selectedCategory,
                     onSelectCategory = { selectedCategory = it },
@@ -276,7 +236,6 @@ fun HomeScreen(
                             selectedCategory = created
                         }
                     },
-
                     onCancel = {
                         showAddNote = false
                         selectedCategory = null
@@ -285,18 +244,7 @@ fun HomeScreen(
                         scope.launch {
                             val newId = if (notes.isEmpty()) 1 else notes.maxOf { it.id } + 1
                             val cat = selectedCategory
-
-                            notesDb.addNote(
-                                uid,
-                                FirestoreNote(
-                                    id = newId,
-                                    title = newTitle.ifBlank { "Untitled" },
-                                    content = newContent,
-                                    categoryId = cat?.id ?: "",
-                                    categoryName = cat?.name ?: "Uncategorized"
-                                )
-                            )
-
+                            notesDb.addNote(uid, FirestoreNote(id = newId, title = newTitle.ifBlank { "Untitled" }, content = newContent, categoryId = cat?.id ?: "", categoryName = cat?.name ?: "Uncategorized"))
                             notes = notesDb.getNotes(uid)
                             categories = notesDb.getCategories(uid)
                         }
@@ -306,13 +254,30 @@ fun HomeScreen(
                 )
             }
         }
+
+        // --- 3. NEW: ADD THE DASHBOARD & SUBSCRIPTION POPUPS HERE ---
+        if (showDashboard) {
+            StudyDashboardDialog(onDismiss = { showDashboard = false })
+        }
+
+        if (showSubscription) {
+            Dialog(onDismissRequest = { showSubscription = false }) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxSize().padding(vertical = 24.dp)
+                ) {
+                    SubscriptionScreen(onClose = { showSubscription = false })
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun HomeTopBar(
     onOpenDrawer: () -> Unit,
-    onSearch: () -> Unit = {}
+    onSearch: () -> Unit = {},
+    onOpenDashboard: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -320,12 +285,14 @@ fun HomeTopBar(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 1. Menu Button
         IconButton(onClick = onOpenDrawer) {
             Icon(Icons.Default.Menu, contentDescription = "Open Menu")
         }
 
         Spacer(Modifier.width(8.dp))
 
+        // 2. Logo
         Image(
             painterResource(id = R.drawable.studybuddylogo_cropped),
             contentDescription = "StudyBuddy Logo",
@@ -334,6 +301,16 @@ fun HomeTopBar(
 
         Spacer(Modifier.weight(1f))
 
+        // 3. Dashboard
+        IconButton(onClick = onOpenDashboard) {
+            Icon(
+                imageVector = Icons.Default.Analytics, // Or Icons.Default.Dashboard
+                contentDescription = "Study Dashboard",
+                tint = MaterialTheme.colorScheme.primary // Optional: make it stand out
+            )
+        }
+
+        // 4. Search Button
         IconButton(onClick = onSearch) {
             Icon(Icons.Default.Search, contentDescription = "Search")
         }

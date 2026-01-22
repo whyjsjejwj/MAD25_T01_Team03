@@ -117,8 +117,6 @@ fun MotivationScreen(
 
             ZenSoundPlayer(onUpgrade = { showSubscription = true })
 
-            ConsistencyDashboard(onUpgrade = { showSubscription = true })
-
             DailyChecklistCard(
                 habits = habits,
                 habitStatus = habitStatus,
