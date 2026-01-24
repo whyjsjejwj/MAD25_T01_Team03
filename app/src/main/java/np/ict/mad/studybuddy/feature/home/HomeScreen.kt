@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,11 +34,11 @@ import kotlinx.coroutines.launch
 import np.ict.mad.studybuddy.core.storage.FirestoreNote
 import np.ict.mad.studybuddy.core.storage.NoteCategory
 import np.ict.mad.studybuddy.core.storage.NotesFirestore
-import np.ict.mad.studybuddy.feature.motivation.StudyDashboardDialog
 import np.ict.mad.studybuddy.feature.notes.AddNoteFullScreen
 import np.ict.mad.studybuddy.feature.subscription.SubscriptionManager
 import np.ict.mad.studybuddy.feature.subscription.UserTier
 import np.ict.mad.studybuddy.feature.subscription.SubscriptionScreen
+import np.ict.mad.studybuddy.feature.motivation.StudyDashboardDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,7 +56,6 @@ fun HomeScreen(
     val notesDb = remember { NotesFirestore() }
     val scope = rememberCoroutineScope()
 
-    // --- 1. NEW STATE VARIABLES FOR DASHBOARD ---
     var showDashboard by remember { mutableStateOf(false) }
     var showSubscription by remember { mutableStateOf(false) }
 
@@ -70,12 +70,11 @@ fun HomeScreen(
         notes = notesDb.getNotes(uid)
         categories = notesDb.getCategories(uid)
         selectedCategory = null
+        SubscriptionManager.fetchUserSubscription(uid)
     }
 
     LaunchedEffect(showAddNote) {
-        if (showAddNote) {
-            selectedCategory = null
-        }
+        if (showAddNote) selectedCategory = null
     }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -85,38 +84,20 @@ fun HomeScreen(
         drawerContent = {
             AppDrawerContent(
                 onClose = { scope.launch { drawerState.close() } },
-                onOpenNotes = {
+                onOpenNotes = { scope.launch { drawerState.close() }; nav.navigate("notes/$uid/$displayName/$email") },
+                onOpenGroups = { scope.launch { drawerState.close() }; nav.navigate("groups/$uid/$displayName/$email") },
+                onOpenTimer = { scope.launch { drawerState.close() }; onOpenTimer() },
+                onOpenQuiz = { scope.launch { drawerState.close() }; onOpenQuiz() },
+                onOpenMotivation = { scope.launch { drawerState.close() }; onOpenMotivation() },
+                onOpenReflection = { scope.launch { drawerState.close() }; nav.navigate("reflection/$uid") },
+                onOpenProfile = { scope.launch { drawerState.close() }; onOpenProfile() },
+
+                onOpenSubscription = {
                     scope.launch { drawerState.close() }
-                    nav.navigate("notes/$uid/$displayName/$email")
+                    showSubscription = true
                 },
-                onOpenGroups = {
-                    scope.launch { drawerState.close() }
-                    nav.navigate("groups/$uid/$displayName/$email")
-                },
-                onOpenTimer = {
-                    scope.launch { drawerState.close() }
-                    onOpenTimer()
-                },
-                onOpenQuiz = {
-                    scope.launch { drawerState.close() }
-                    onOpenQuiz()
-                },
-                onOpenMotivation = {
-                    scope.launch { drawerState.close() }
-                    onOpenMotivation()
-                },
-                onOpenReflection = {
-                    scope.launch { drawerState.close() }
-                    nav.navigate("reflection/$uid")
-                },
-                onOpenProfile = {
-                    scope.launch { drawerState.close() }
-                    onOpenProfile()
-                },
-                onLogout = {
-                    scope.launch { drawerState.close() }
-                    onLogout()
-                }
+
+                onLogout = { scope.launch { drawerState.close() }; onLogout() }
             )
         }
     ) {
@@ -140,45 +121,55 @@ fun HomeScreen(
                     .padding(16.dp)
             ) {
 
-                // --- 2. CONNECT THE DASHBOARD BUTTON HERE ---
                 HomeTopBar(
                     onOpenDrawer = { scope.launch { drawerState.open() } },
                     onOpenDashboard = {
-                        // Check if user is GOLD
                         if (SubscriptionManager.userTier.hasAccess(UserTier.GOLD)) {
                             showDashboard = true
                         } else {
-                            // If not, ask to upgrade
                             showSubscription = true
                         }
                     }
                 )
 
                 Spacer(Modifier.height(16.dp))
-
-                // ... (Rest of your existing Home code: Welcome text, SummaryCard, etc.) ...
                 Text(
                     text = "Welcome back, $displayName!",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
-
                 Spacer(Modifier.height(16.dp))
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SummaryCard(title = "Study Streak", subtitle = "0 Days", modifier = Modifier.weight(1f))
-                    SummaryCard(title = "Total Notes", subtitle = "${notes.size} Notes", modifier = Modifier.weight(1f))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SummaryCard(
+                        title = "Study Streak",
+                        subtitle = "0 Days",
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    SummaryCard(
+                        title = "Total Notes",
+                        subtitle = "${notes.size} Notes",
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 Spacer(Modifier.height(24.dp))
 
-                // Your Notes Section...
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Your Notes", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Your Notes",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { nav.navigate("notes/$uid/$displayName/$email") }) { Text("View All") }
                         IconButton(onClick = {
@@ -218,7 +209,6 @@ fun HomeScreen(
             }
         }
 
-        // Add Note Screen logic...
         if (showAddNote) {
             key(showAddNote) {
                 AddNoteFullScreen(
@@ -236,10 +226,7 @@ fun HomeScreen(
                             selectedCategory = created
                         }
                     },
-                    onCancel = {
-                        showAddNote = false
-                        selectedCategory = null
-                    },
+                    onCancel = { showAddNote = false; selectedCategory = null },
                     onSave = {
                         scope.launch {
                             val newId = if (notes.isEmpty()) 1 else notes.maxOf { it.id } + 1
@@ -255,9 +242,8 @@ fun HomeScreen(
             }
         }
 
-        // --- 3. NEW: ADD THE DASHBOARD & SUBSCRIPTION POPUPS HERE ---
         if (showDashboard) {
-            StudyDashboardDialog(onDismiss = { showDashboard = false })
+            StudyDashboardDialog(uid = uid, onDismiss = { showDashboard = false })
         }
 
         if (showSubscription) {
@@ -266,7 +252,7 @@ fun HomeScreen(
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxSize().padding(vertical = 24.dp)
                 ) {
-                    SubscriptionScreen(onClose = { showSubscription = false })
+                    SubscriptionScreen(uid = uid, onClose = { showSubscription = false })
                 }
             }
         }
@@ -277,22 +263,18 @@ fun HomeScreen(
 fun HomeTopBar(
     onOpenDrawer: () -> Unit,
     onSearch: () -> Unit = {},
-    onOpenDashboard: () -> Unit
+    onOpenDashboard: () -> Unit = {}
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 1. Menu Button
         IconButton(onClick = onOpenDrawer) {
             Icon(Icons.Default.Menu, contentDescription = "Open Menu")
         }
 
         Spacer(Modifier.width(8.dp))
 
-        // 2. Logo
         Image(
             painterResource(id = R.drawable.studybuddylogo_cropped),
             contentDescription = "StudyBuddy Logo",
@@ -301,16 +283,11 @@ fun HomeTopBar(
 
         Spacer(Modifier.weight(1f))
 
-        // 3. Dashboard
+
         IconButton(onClick = onOpenDashboard) {
-            Icon(
-                imageVector = Icons.Default.Analytics, // Or Icons.Default.Dashboard
-                contentDescription = "Study Dashboard",
-                tint = MaterialTheme.colorScheme.primary // Optional: make it stand out
-            )
+            Icon(Icons.Default.Analytics, contentDescription = "Dashboard", tint = MaterialTheme.colorScheme.primary)
         }
 
-        // 4. Search Button
         IconButton(onClick = onSearch) {
             Icon(Icons.Default.Search, contentDescription = "Search")
         }
@@ -327,6 +304,7 @@ fun AppDrawerContent(
     onOpenMotivation: () -> Unit,
     onOpenReflection: () -> Unit,
     onOpenProfile: () -> Unit,
+    onOpenSubscription: () -> Unit,
     onLogout: (() -> Unit)? = null
 ) {
     ModalDrawerSheet {
@@ -337,39 +315,26 @@ fun AppDrawerContent(
                 .padding(vertical = 12.dp)
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Menu",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
-                }
+                Text("Menu", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                IconButton(onClick = onClose) { Icon(Icons.Default.Close, contentDescription = "Close") }
             }
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider()
             Spacer(Modifier.height(8.dp))
 
-            Text(
-                text = "Quick Navigation",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+            Text("Quick Navigation", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
 
             DrawerItem("Notes", Icons.Default.EditNote, onOpenNotes)
             DrawerItem("Study Groups", Icons.Default.Chat, onOpenGroups)
             DrawerItem("Timer", Icons.Default.Timer, onOpenTimer)
             DrawerItem("Quiz", Icons.Default.School, onOpenQuiz)
             DrawerItem("Motivation", Icons.Default.Star, onOpenMotivation)
-            DrawerItem("Study Reflection", Icons.Default.EditNote, onOpenReflection )
+            DrawerItem("Study Reflection", Icons.Default.EditNote, onOpenReflection)
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider()
@@ -377,14 +342,11 @@ fun AppDrawerContent(
 
             DrawerItem("Profile", Icons.Default.Person, onOpenProfile)
 
+            DrawerItem("Subscription Plan", Icons.Default.Payment, onOpenSubscription)
+
             if (onLogout != null) {
                 Spacer(Modifier.height(6.dp))
-                DrawerItem(
-                    title = "Logout",
-                    icon = Icons.Default.Logout,
-                    onClick = onLogout,
-                    tint = MaterialTheme.colorScheme.error
-                )
+                DrawerItem("Logout", Icons.Default.Logout, onClick = onLogout, tint = MaterialTheme.colorScheme.error)
             }
         }
     }

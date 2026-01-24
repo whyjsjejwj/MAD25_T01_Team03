@@ -1,7 +1,6 @@
 package np.ict.mad.studybuddy.feature.motivation
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import np.ict.mad.studybuddy.core.storage.HabitRepository
 import np.ict.mad.studybuddy.core.storage.MotivationFirestore
 import np.ict.mad.studybuddy.core.storage.QuotesFirestore
 import np.ict.mad.studybuddy.feature.home.BottomNavBar
@@ -34,6 +34,7 @@ fun MotivationScreen(
 ) {
     val quotesDb = remember { QuotesFirestore() }
     val motivationDb = remember { MotivationFirestore() }
+    val habitRepo = remember { HabitRepository() }
 
     var quotes by remember { mutableStateOf<List<MotivationItem>>(emptyList()) }
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
@@ -121,9 +122,13 @@ fun MotivationScreen(
                 habits = habits,
                 habitStatus = habitStatus,
                 onHabitToggle = { habit ->
-                    habitStatus = habitStatus.toMutableMap().apply {
+                    val newStatus = habitStatus.toMutableMap().apply {
                         this[habit] = !(this[habit] ?: false)
                     }
+                    habitStatus = newStatus
+
+                    val count = newStatus.values.count { it }
+                    habitRepo.saveDailyProgress(uid, count)
                 },
                 completedHabits = completedHabits,
                 totalHabits = totalHabits
@@ -137,7 +142,7 @@ fun MotivationScreen(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxSize().padding(vertical = 24.dp)
                     ) {
-                        SubscriptionScreen(onClose = { showSubscription = false })
+                        SubscriptionScreen(uid = uid, onClose = { showSubscription = false })
                     }
                 }
             }

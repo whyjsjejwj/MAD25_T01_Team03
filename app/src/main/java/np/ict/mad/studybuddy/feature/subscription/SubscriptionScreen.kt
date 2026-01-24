@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,19 +19,20 @@ import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
 
 @Composable
-fun SubscriptionScreen(onClose: () -> Unit) {
+fun SubscriptionScreen(uid: String, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     var isProcessing by remember { mutableStateOf(false) }
     var showSuccess by remember { mutableStateOf(false) }
 
+    val currentTier = SubscriptionManager.userTier
+    val isSubscribed = currentTier != UserTier.BRONZE
+
     if (showSuccess) {
         AlertDialog(
             onDismissRequest = onClose,
-            confirmButton = {
-                Button(onClick = onClose) { Text("Awesome!") }
-            },
-            title = { Text("Upgrade Successful") },
-            text = { Text("Welcome to the ${SubscriptionManager.userTier.label} Club!") },
+            confirmButton = { Button(onClick = onClose) { Text("OK") } },
+            title = { Text("Success") },
+            text = { Text("Your subscription has been updated.") },
             icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.Green) }
         )
     }
@@ -42,64 +44,85 @@ fun SubscriptionScreen(onClose: () -> Unit) {
                 colors = CardDefaults.cardColors(Color.White),
                 modifier = Modifier.padding(16.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = Color(0xFFE7C15A))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Contacting Payment Gateway...", fontWeight = FontWeight.Bold)
-                    Text("Please do not close the app.", style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.height(16.dp))
+                    Text("Updating Plan...", fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Upgrade StudyBuddy", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Unlock focus tools & analytics", color = Color.Gray)
+        Text("Subscription Plan", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
 
-        Spacer(modifier = Modifier.height(24.dp))
+        if (isSubscribed) {
+            Text("Current Plan: ${currentTier.label}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        } else {
+            Text("Unlock focus tools & analytics", color = Color.Gray)
+        }
+
+        Spacer(Modifier.height(24.dp))
 
         TierCard(
             title = "Silver Tier",
-            price = "$1.99",
-            features = listOf("Shuffle Quotes", "Zen Focus Sounds", "Custom Backgrounds"),
+            price = "$1.99 / mo",
+            features = listOf("Zen Focus Sounds", "Remove Ads", "Support the Devs"),
             color = Color(0xFFC0C0C0),
             onClick = {
                 scope.launch {
                     isProcessing = true
-                    SubscriptionManager.simulatePayment(UserTier.SILVER)
+                    SubscriptionManager.purchaseSubscription(uid, UserTier.SILVER)
                     isProcessing = false
                     showSuccess = true
                 }
             }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
         TierCard(
             title = "Gold Tier",
-            price = "$4.99",
-            features = listOf("Everything in Silver", "Daily Journal", "Progress Analytics", "PDF Export"),
+            price = "$4.99 / mo",
+            features = listOf("Everything in Silver", "Progress Analytics", "Study Dashboard"),
             color = Color(0xFFFFD700),
             onClick = {
                 scope.launch {
                     isProcessing = true
-                    SubscriptionManager.simulatePayment(UserTier.GOLD)
+                    SubscriptionManager.purchaseSubscription(uid, UserTier.GOLD)
                     isProcessing = false
                     showSuccess = true
                 }
             }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
-        TextButton(onClick = onClose) { Text("Cancel") }
+        Spacer(Modifier.height(24.dp))
+
+        if (isSubscribed) {
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        isProcessing = true
+                        SubscriptionManager.cancelSubscription(uid)
+                        isProcessing = false
+                        showSuccess = true
+                    }
+                },
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                border = BorderStroke(1.dp, Color.Red),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Warning, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Cancel Subscription")
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        TextButton(onClick = onClose) { Text("Close") }
     }
 }
 
@@ -121,9 +144,7 @@ fun TierCard(title: String, price: String, features: List<String>, color: Color,
                 Text(price, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(8.dp))
-            features.forEach {
-                Text("• $it", style = MaterialTheme.typography.bodyMedium, color = Color.DarkGray)
-            }
+            features.forEach { Text("• $it", style = MaterialTheme.typography.bodyMedium, color = Color.DarkGray) }
         }
     }
 }
