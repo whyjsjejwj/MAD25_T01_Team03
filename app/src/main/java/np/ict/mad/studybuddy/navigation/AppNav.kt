@@ -393,6 +393,15 @@ fun AppNav() {
             composable("forgotPassword") {
                 ForgotPasswordScreen(onBackToLogin = { nav.popBackStack() })
             }
+
+            // ---------- DASHBOARD ----------
+            composable(
+                route = "dashboard/{uid}",
+                arguments = listOf(navArgument("uid") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val uid = backStackEntry.arguments?.getString("uid") ?: ""
+                np.ict.mad.studybuddy.feature.motivation.StudyDashboardScreen(nav = nav, uid = uid)
+            }
         }
 
         // Floating overlay timer

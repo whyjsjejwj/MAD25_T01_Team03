@@ -38,7 +38,6 @@ import np.ict.mad.studybuddy.feature.notes.AddNoteFullScreen
 import np.ict.mad.studybuddy.feature.subscription.SubscriptionManager
 import np.ict.mad.studybuddy.feature.subscription.UserTier
 import np.ict.mad.studybuddy.feature.subscription.SubscriptionScreen
-import np.ict.mad.studybuddy.feature.motivation.StudyDashboardDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,7 +124,7 @@ fun HomeScreen(
                     onOpenDrawer = { scope.launch { drawerState.open() } },
                     onOpenDashboard = {
                         if (SubscriptionManager.userTier.hasAccess(UserTier.GOLD)) {
-                            showDashboard = true
+                            nav.navigate("dashboard/$uid")
                         } else {
                             showSubscription = true
                         }
@@ -240,10 +239,6 @@ fun HomeScreen(
                     }
                 )
             }
-        }
-
-        if (showDashboard) {
-            StudyDashboardDialog(uid = uid, onDismiss = { showDashboard = false })
         }
 
         if (showSubscription) {
