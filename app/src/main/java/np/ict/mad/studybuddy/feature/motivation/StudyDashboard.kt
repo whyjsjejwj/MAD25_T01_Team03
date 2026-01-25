@@ -33,6 +33,8 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
     var history by remember { mutableStateOf<List<DailyHabitLog>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
+    var showInfoDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(uid) {
         history = habitRepo.getHabitHistory(uid)
         isLoading = false
@@ -41,10 +43,17 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
     val totalSessions = history.size
     val totalHabitsDone = history.sumOf { it.completedCount }
     val avgHabits = if (totalSessions > 0) String.format("%.1f", totalHabitsDone.toFloat() / totalSessions) else "0"
-    val streak = history.takeWhile { it.completedCount > 0 }.count()
+
+    val maxPossibleHabits = totalSessions * 4
+    val consistency = if (maxPossibleHabits > 0) {
+        (totalHabitsDone.toFloat() / maxPossibleHabits) * 100
+    } else {
+        0f
+    }
+    val consistencyString = String.format("%.0f%%", consistency)
 
     val stats = listOf(
-        StudyStat("Current Streak", "$streak Days", Icons.Default.LocalFireDepartment, Color(0xFFE91E63)),
+        StudyStat("Consistency", consistencyString, Icons.Default.PieChart, Color(0xFFE91E63)),
         StudyStat("Active Days", "$totalSessions Days", Icons.Default.CalendarMonth, Color(0xFF2196F3)),
         StudyStat("Total Habits", "$totalHabitsDone", Icons.Default.CheckCircle, Color(0xFF4CAF50)),
         StudyStat("Avg / Day", avgHabits, Icons.Default.TrendingUp, Color(0xFFFF9800))
@@ -59,6 +68,11 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { showInfoDialog = true }) {
+                        Icon(Icons.Default.Info, contentDescription = "Help", tint = Color(0xFF6D4C41))
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFFFFF8E1),
                     titleContentColor = Color(0xFF6D4C41)
@@ -66,6 +80,32 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
             )
         }
     ) { innerPadding ->
+
+        if (showInfoDialog) {
+            AlertDialog(
+                onDismissRequest = { showInfoDialog = false },
+                title = { Text("Dashboard Guide", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Here is how your stats are calculated:", style = MaterialTheme.typography.bodyMedium)
+
+                        Divider()
+
+                        InfoRow(Icons.Default.PieChart, "Consistency", "Percentage of daily tasks you completed on days you studied.")
+                        InfoRow(Icons.Default.CalendarMonth, "Active Days", "Total number of days you logged at least one study habit.")
+                        InfoRow(Icons.Default.CheckCircle, "Total Habits", "The sum of all individual checklist items completed.")
+                        InfoRow(Icons.Default.TrendingUp, "Avg / Day", "Average number of tasks completed per active study day.")
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showInfoDialog = false }) {
+                        Text("Got it")
+                    }
+                },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(16.dp)
+            )
+        }
 
         if (isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -82,9 +122,8 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
             ) {
                 item {
                     Text("Overview", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color(0xFF6D4C41))
-                    Text("Your study consistency at a glance.", color = Color.Gray)
+                    Text("Your study performance at a glance.", color = Color.Gray)
                 }
-
 
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -116,6 +155,18 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun InfoRow(icon: ImageVector, title: String, desc: String) {
+    Row(verticalAlignment = Alignment.Top) {
+        Icon(icon, contentDescription = null, tint = Color(0xFF6D4C41), modifier = Modifier.size(20.dp).padding(top = 2.dp))
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+            Text(desc, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
     }
 }

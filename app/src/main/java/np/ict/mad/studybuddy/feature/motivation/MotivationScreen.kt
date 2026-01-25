@@ -15,12 +15,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import np.ict.mad.studybuddy.core.storage.HabitRepository
 import np.ict.mad.studybuddy.core.storage.MotivationFirestore
 import np.ict.mad.studybuddy.core.storage.QuotesFirestore
 import np.ict.mad.studybuddy.feature.home.BottomNavBar
 import np.ict.mad.studybuddy.feature.home.BottomNavTab
 import np.ict.mad.studybuddy.feature.subscription.SubscriptionScreen
+import np.ict.mad.studybuddy.core.storage.HabitRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +49,18 @@ fun MotivationScreen(
 
     var habitStatus by remember {
         mutableStateOf(habits.associateWith { false })
+    }
+
+    LaunchedEffect(uid) {
+        quotesDb.getQuotes { list ->
+            quotes = list.take(5)
+            selectedIndex = null
+        }
+
+        val savedHabits = habitRepo.getTodayHabits(uid)
+        if (savedHabits != null) {
+            habitStatus = habits.associateWith { key -> savedHabits[key] ?: false }
+        }
     }
 
     val completedHabits = habitStatus.values.count { it }
@@ -128,7 +140,8 @@ fun MotivationScreen(
                     habitStatus = newStatus
 
                     val count = newStatus.values.count { it }
-                    habitRepo.saveDailyProgress(uid, count)
+
+                    habitRepo.saveDailyProgress(uid, count, newStatus)
                 },
                 completedHabits = completedHabits,
                 totalHabits = totalHabits
