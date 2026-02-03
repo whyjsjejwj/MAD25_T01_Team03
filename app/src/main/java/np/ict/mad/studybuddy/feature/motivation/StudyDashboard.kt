@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import np.ict.mad.studybuddy.core.storage.HabitRepository
 import np.ict.mad.studybuddy.core.storage.DailyHabitLog
 
+// simple data class to hold the stat info for the ui cards
 data class StudyStat(
     val label: String,
     val value: String,
@@ -29,21 +30,36 @@ data class StudyStat(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudyDashboardScreen(nav: NavController, uid: String) {
+    // section database setup
     val habitRepo = remember { HabitRepository() }
+
+    // stores the history logs retrieved from firebase
     var history by remember { mutableStateOf<List<DailyHabitLog>>(emptyList()) }
+    // shows a loading spinner while we fetch data
     var isLoading by remember { mutableStateOf(true) }
 
+    // controls the visibility of the help popup
     var showInfoDialog by remember { mutableStateOf(false) }
 
+    // section fetch data
     LaunchedEffect(uid) {
+        // get the user's entire habit history
         history = habitRepo.getHabitHistory(uid)
         isLoading = false
     }
 
+    // section calculate statistics
+    // 1. total days user has used the app
     val totalSessions = history.size
+
+    // 2. total number of checkboxes ticked ever
     val totalHabitsDone = history.sumOf { it.completedCount }
+
+    // 3. average habits per day
     val avgHabits = if (totalSessions > 0) String.format("%.1f", totalHabitsDone.toFloat() / totalSessions) else "0"
 
+    // 4. consistency score calculation
+    // assuming 4 daily tasks, we check how many they actually did vs max possible
     val maxPossibleHabits = totalSessions * 4
     val consistency = if (maxPossibleHabits > 0) {
         (totalHabitsDone.toFloat() / maxPossibleHabits) * 100
@@ -52,6 +68,7 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
     }
     val consistencyString = String.format("%.0f%%", consistency)
 
+    // prepare the list of stats to display in the grid
     val stats = listOf(
         StudyStat("Consistency", consistencyString, Icons.Default.PieChart, Color(0xFFE91E63)),
         StudyStat("Active Days", "$totalSessions Days", Icons.Default.CalendarMonth, Color(0xFF2196F3)),
@@ -68,6 +85,7 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
+                // info button to explain what the stats mean
                 actions = {
                     IconButton(onClick = { showInfoDialog = true }) {
                         Icon(Icons.Default.Info, contentDescription = "Help", tint = Color(0xFF6D4C41))
@@ -81,6 +99,7 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
         }
     ) { innerPadding ->
 
+        // section info popup
         if (showInfoDialog) {
             AlertDialog(
                 onDismissRequest = { showInfoDialog = false },
@@ -88,9 +107,7 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Here is how your stats are calculated:", style = MaterialTheme.typography.bodyMedium)
-
                         Divider()
-
                         InfoRow(Icons.Default.PieChart, "Consistency", "Percentage of daily tasks you completed on days you studied.")
                         InfoRow(Icons.Default.CalendarMonth, "Active Days", "Total number of days you logged at least one study habit.")
                         InfoRow(Icons.Default.CheckCircle, "Total Habits", "The sum of all individual checklist items completed.")
@@ -120,11 +137,14 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // section header
                 item {
                     Text("Overview", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color(0xFF6D4C41))
                     Text("Your study performance at a glance.", color = Color.Gray)
                 }
 
+                // section stats grid
+                // displays the 4 cards calculated earlier
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -145,6 +165,8 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
                     Text("Recent Activity Log", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color(0xFF6D4C41))
                 }
 
+                // section recent history list
+                // shows a list of days where the user studied
                 if (history.isEmpty()) {
                     item {
                         Text("No activity recorded yet. Start checking off your daily habits!", color = Color.Gray)
@@ -159,6 +181,7 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
     }
 }
 
+// helper composable for the help dialog rows
 @Composable
 fun InfoRow(icon: ImageVector, title: String, desc: String) {
     Row(verticalAlignment = Alignment.Top) {
@@ -210,6 +233,7 @@ fun HistoryItemCard(log: DailyHabitLog) {
                 Text(log.date, fontWeight = FontWeight.Medium)
             }
 
+            // color codes the badge based on how many habits were done
             Surface(
                 color = if (log.completedCount >= 4) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
                 shape = RoundedCornerShape(8.dp)

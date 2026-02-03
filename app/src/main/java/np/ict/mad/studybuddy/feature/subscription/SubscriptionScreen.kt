@@ -20,13 +20,20 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SubscriptionScreen(uid: String, onClose: () -> Unit) {
+    // section setup
+    // allows us to run background tasks like purchasing
     val scope = rememberCoroutineScope()
+    // tracks if a transaction is currently happening to show spinner
     var isProcessing by remember { mutableStateOf(false) }
+    // tracks if we should show the success popup
     var showSuccess by remember { mutableStateOf(false) }
 
+    // check what plan the user is currently on
     val currentTier = SubscriptionManager.userTier
     val isSubscribed = currentTier != UserTier.BRONZE
 
+    // section popups
+    // shows a simple success message after purchase or cancel
     if (showSuccess) {
         AlertDialog(
             onDismissRequest = onClose,
@@ -37,6 +44,7 @@ fun SubscriptionScreen(uid: String, onClose: () -> Unit) {
         )
     }
 
+    // shows a loading spinner while communicating with firebase
     if (isProcessing) {
         Dialog(onDismissRequest = {}) {
             Card(
@@ -53,12 +61,14 @@ fun SubscriptionScreen(uid: String, onClose: () -> Unit) {
         }
     }
 
+    // section main layout
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Subscription Plan", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
 
+        // display current status
         if (isSubscribed) {
             Text("Current Plan: ${currentTier.label}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         } else {
@@ -67,14 +77,17 @@ fun SubscriptionScreen(uid: String, onClose: () -> Unit) {
 
         Spacer(Modifier.height(24.dp))
 
+        // section silver tier
+        // displays the silver plan card and handles upgrade
         TierCard(
             title = "Silver Tier",
             price = "$1.99 / mo",
             features = listOf("Zen Focus Sounds", "Remove Ads", "Support the Devs"),
-            color = Color(0xFFC0C0C0),
+            color = Color(0xFFC0C0C0), // silver color
             onClick = {
                 scope.launch {
                     isProcessing = true
+                    // calls the manager to update firebase
                     SubscriptionManager.purchaseSubscription(uid, UserTier.SILVER)
                     isProcessing = false
                     showSuccess = true
@@ -84,11 +97,13 @@ fun SubscriptionScreen(uid: String, onClose: () -> Unit) {
 
         Spacer(Modifier.height(16.dp))
 
+        // section gold tier
+        // displays the gold plan card and handles upgrade
         TierCard(
             title = "Gold Tier",
             price = "$4.99 / mo",
             features = listOf("Everything in Silver", "Progress Analytics", "Study Dashboard"),
-            color = Color(0xFFFFD700),
+            color = Color(0xFFFFD700), // gold color
             onClick = {
                 scope.launch {
                     isProcessing = true
@@ -101,11 +116,14 @@ fun SubscriptionScreen(uid: String, onClose: () -> Unit) {
 
         Spacer(Modifier.height(24.dp))
 
+        // section cancel option
+        // only show this button if user is actually subscribed
         if (isSubscribed) {
             OutlinedButton(
                 onClick = {
                     scope.launch {
                         isProcessing = true
+                        // reverts user back to bronze tier
                         SubscriptionManager.cancelSubscription(uid)
                         isProcessing = false
                         showSuccess = true
@@ -126,6 +144,8 @@ fun SubscriptionScreen(uid: String, onClose: () -> Unit) {
     }
 }
 
+// section helper component
+// reusable ui for the subscription cards
 @Composable
 fun TierCard(title: String, price: String, features: List<String>, color: Color, onClick: () -> Unit) {
     Card(

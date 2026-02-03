@@ -10,17 +10,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.launch
+import np.ict.mad.studybuddy.core.storage.DailyHabitLog
+import np.ict.mad.studybuddy.core.storage.HabitRepository
 import np.ict.mad.studybuddy.core.storage.MotivationFirestore
 import np.ict.mad.studybuddy.core.storage.QuotesFirestore
 import np.ict.mad.studybuddy.feature.home.BottomNavBar
 import np.ict.mad.studybuddy.feature.home.BottomNavTab
 import np.ict.mad.studybuddy.feature.subscription.SubscriptionScreen
-import np.ict.mad.studybuddy.core.storage.HabitRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,14 +33,27 @@ fun MotivationScreen(
     onOpenMotivation: () -> Unit,
     onOpenFavourites: () -> Unit
 ) {
+    // section setup databases
     val quotesDb = remember { QuotesFirestore() }
     val motivationDb = remember { MotivationFirestore() }
+
+    // helper to save mood diary and habits to firebase
     val habitRepo = remember { HabitRepository() }
+
+    // allows us to run background tasks to refresh the calendar
+    val scope = rememberCoroutineScope()
 
     var quotes by remember { mutableStateOf<List<MotivationItem>>(emptyList()) }
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
+
+    // controls whether the subscription popup is visible
     var showSubscription by remember { mutableStateOf(false) }
 
+    // section calendar history data
+    // stores the list of past moods and diaries from firebase
+    var history by remember { mutableStateOf<List<DailyHabitLog>>(emptyList()) }
+
+    // list of fixed habits for the day
     val habits = listOf(
         "Study at least 25 minutes",
         "Review yesterday’s notes",
@@ -47,39 +61,37 @@ fun MotivationScreen(
         "Plan tomorrow’s task"
     )
 
+    // tracks which boxes are checked
     var habitStatus by remember {
         mutableStateOf(habits.associateWith { false })
     }
 
+    // section load data on start
     LaunchedEffect(uid) {
+        // load the random quotes
         quotesDb.getQuotes { list ->
             quotes = list.take(5)
             selectedIndex = null
         }
 
+        // fetch history so the calendar knows what to display
+        history = habitRepo.getHabitHistory(uid)
+
+        // check firebase to see what we already checked off today
         val savedHabits = habitRepo.getTodayHabits(uid)
         if (savedHabits != null) {
+            // restore the checkboxes from the saved data
             habitStatus = habits.associateWith { key -> savedHabits[key] ?: false }
         }
     }
 
+    // calculate how many are done for the progress bar
     val completedHabits = habitStatus.values.count { it }
     val totalHabits = habits.size
-
-    LaunchedEffect(Unit) {
-        quotesDb.getQuotes { list ->
-            quotes = list.take(5)
-            selectedIndex = null
-        }
-    }
 
     val selectedQuote = selectedIndex?.let { idx ->
         quotes.getOrNull(idx)
     }
-
-    val gradient = Brush.verticalGradient(
-        listOf(Color(0xFFFFFDF7), Color(0xFFFFF7E8))
-    )
 
     Scaffold(
         topBar = {
@@ -113,7 +125,7 @@ fun MotivationScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         )
         {
-
+            // section quote selector
             QuoteSelectorCard(
                 quotes = quotes,
                 selectedIndex = selectedIndex,
@@ -128,19 +140,42 @@ fun MotivationScreen(
                 onOpenFavourites = onOpenFavourites
             )
 
-            ZenSoundPlayer(onUpgrade = { showSubscription = true })
+            // section mood calendar and diary
+            // this is the new feature replacing the music player
+            MoodCalendarCard(
+                history = history,
+                onSaveMood = { mood ->
+                    // save the selected emoji to firebase
+                    habitRepo.saveMood(uid, mood)
+                    // refresh the history list immediately so the calendar updates ui
+                    scope.launch { history = habitRepo.getHabitHistory(uid) }
+                },
+                onSaveDiary = { text ->
+                    // save the diary entry text to firebase
+                    habitRepo.saveDiary(uid, text)
+                    // refresh immediately so the small dot indicator appears
+                    scope.launch { history = habitRepo.getHabitHistory(uid) }
+                },
+                onUpgrade = {
+                    // if user is not silver tier show the subscription popup
+                    showSubscription = true
+                }
+            )
 
+            // section daily checklist
             DailyChecklistCard(
                 habits = habits,
                 habitStatus = habitStatus,
                 onHabitToggle = { habit ->
+                    // flip the checkbox status
                     val newStatus = habitStatus.toMutableMap().apply {
                         this[habit] = !(this[habit] ?: false)
                     }
                     habitStatus = newStatus
 
+                    // count how many are true
                     val count = newStatus.values.count { it }
-
+                    // save the updated map to firebase
                     habitRepo.saveDailyProgress(uid, count, newStatus)
                 },
                 completedHabits = completedHabits,
@@ -149,12 +184,14 @@ fun MotivationScreen(
 
             FlashcardTipsSection()
 
+            // section subscription popup
             if (showSubscription) {
                 Dialog(onDismissRequest = { showSubscription = false }) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxSize().padding(vertical = 24.dp)
                     ) {
+                        // shows the plans and allows user to subscribe
                         SubscriptionScreen(uid = uid, onClose = { showSubscription = false })
                     }
                 }
@@ -162,6 +199,8 @@ fun MotivationScreen(
         }
     }
 }
+
+// section helper components
 
 @Composable
 fun QuoteSelectorCard(
