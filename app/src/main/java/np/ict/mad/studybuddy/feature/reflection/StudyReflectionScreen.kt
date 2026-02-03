@@ -92,6 +92,12 @@ fun StudyReflectionScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // firestore helper to handle streaks
+            val streakDb = remember { np.ict.mad.studybuddy.feature.streaks.StreaksFirestore() }
+
+            // coroutine scope for the firebase operations
+            val scope = rememberCoroutineScope()
+
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !saving,
@@ -110,6 +116,9 @@ fun StudyReflectionScreen(
                                 )
                             )
                             saving = false
+                            // record study activity (start streak, continue streak, remain the same)
+                            streakDb.recordStudyActivity(uid)
+
                             onBack()
                         }catch (e: Exception) {
                             saving = false

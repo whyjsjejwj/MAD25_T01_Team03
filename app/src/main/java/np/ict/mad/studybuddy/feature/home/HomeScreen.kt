@@ -65,11 +65,25 @@ fun HomeScreen(
     var newTitle by remember { mutableStateOf("") }
     var newContent by remember { mutableStateOf("") }
 
+    val streakDb = remember { np.ict.mad.studybuddy.feature.streaks.StreaksFirestore() } //firestore helper
+    var studyStreak  by remember { mutableStateOf(0) } // what is being displayed in home (streak)
+    var streakLoading by remember {mutableStateOf(true)} // to show the streak loading
+
     LaunchedEffect(uid) {
         notes = notesDb.getNotes(uid)
         categories = notesDb.getCategories(uid)
         selectedCategory = null
         SubscriptionManager.fetchUserSubscription(uid)
+
+        // load study streak
+        streakLoading = true
+        try{
+            studyStreak = streakDb.getStreak(uid) // fetching the user's current streak from firebase
+        } catch(e: Exception){
+            studyStreak = 0 // set it to 0 if fails
+        }finally {
+            streakLoading = false // stop the loading
+        }
     }
 
     LaunchedEffect(showAddNote) {
@@ -145,7 +159,8 @@ fun HomeScreen(
                 ) {
                     SummaryCard(
                         title = "Study Streak",
-                        subtitle = "0 Days",
+                        // show loading when fetching, otherwise show streak number
+                        subtitle = if (streakLoading) "Loading..." else "$studyStreak Days", //show streak loading else show the streak (in days)
                         modifier = Modifier.weight(1f)
                     )
 

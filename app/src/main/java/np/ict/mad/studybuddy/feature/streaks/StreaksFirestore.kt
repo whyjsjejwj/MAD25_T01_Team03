@@ -9,7 +9,7 @@ class StreaksFirestore {
 
     private val db = FirebaseFirestore.getInstance() // the reference to firebase db
 
-    // will return today's date as a string (using sg timestone)
+    // will return today's date as a string (using sg timezone)
     private fun todayString(): String{
         val sg = ZoneId.of("Asia/Singapore")
         return LocalDate.now(sg).toString()
@@ -35,13 +35,12 @@ class StreaksFirestore {
             // reads the existing streak data (if no data, sets the default values)
             val lastDate = snap.getString("lastStudyDate") ?: ""
             val currentStreak = (snap.getLong("studyStreak") ?: 0L).toInt()
-            val longestStreak = (snap.getLong("longestStreak") ?: 0L).toInt()
 
             // determines the new streak (same day reflection submitted;unchanged,consecutive submission;change streak)
             val newStreak = when {
-                lastDate == today -> currentStreak
+                lastDate == today -> maxOf(currentStreak,1) // to prevent streak from getting stuck at 0 even after reflection submitted
                 lastDate == yesterday -> currentStreak + 1
-                else -> 0
+                else -> 1
             }
 
             // merging streak data to the user document on firebase
