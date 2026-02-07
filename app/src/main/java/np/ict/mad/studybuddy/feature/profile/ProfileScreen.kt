@@ -3,8 +3,10 @@ package np.ict.mad.studybuddy.feature.profile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
@@ -52,14 +54,14 @@ fun ProfileScreen(
     val currentTheme by prefs.theme.collectAsState(initial = "system")
     var showThemeDialog by remember { mutableStateOf(false) }
 
-    var educationLevel by remember { mutableStateOf("Loading...") }
-    var eduLoading by remember { mutableStateOf(true) }
+    var educationLevel by remember { mutableStateOf("Loading...") } // the user's edu level
+    var eduLoading by remember { mutableStateOf(true) } //shows Loading to not show blank when fetching from firebase
 
-    var showEduDialog by remember { mutableStateOf(false) }
-    var eduSaving by remember {mutableStateOf(false)}
-    var eduError by remember {mutableStateOf<String?>(null)}
+    var showEduDialog by remember { mutableStateOf(false) } //to change edu level
+    var eduSaving by remember {mutableStateOf(false)} // saving
+    var eduError by remember {mutableStateOf<String?>(null)} // to store any error message if saving education fails
 
-    // education levels the users can change to
+    // education levels the users can change to/choose from
     val eduOptions = listOf(
         "Unknown",
         "Primary 3",
@@ -79,15 +81,16 @@ fun ProfileScreen(
         try {
             val users = firestore.collection("users")
             val uidRef = users.document(uid)
-            val uidDoc = uidRef.get().await()
+            val uidDoc = uidRef.get().await() // reads current user document
 
             val existingEmail = uidDoc.getString("email").orEmpty()
             val existingName = uidDoc.getString("displayName").orEmpty()
-            val existingEdu = uidDoc.getString("educationLevel")
+            val existingEdu = uidDoc.getString("educationLevel") // reads educationlevel from Firestore
 
-            val safeEdu = existingEdu?.takeIf { it.isNotBlank() } ?: "Unknown"
+            val safeEdu = existingEdu?.takeIf { it.isNotBlank() } ?: "Unknown" // if edulevel missing, use Unknown
             educationLevel = safeEdu
 
+            // merge the edulevel into user doc along with email and name
             uidRef.set(
                 mapOf(
                     "email" to email.trim(),
@@ -121,7 +124,8 @@ fun ProfileScreen(
             modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -211,8 +215,8 @@ fun ProfileScreen(
 
     // Education Level dialog
     if (showEduDialog) {
-        var tempSelection by remember(educationLevel) { mutableStateOf(educationLevel) }
-        var expanded by remember { mutableStateOf(false) }
+        var tempSelection by remember(educationLevel) { mutableStateOf(educationLevel) } // keeps a temporary copy of edu level
+        var expanded by remember { mutableStateOf(false) } // controls the dropdown list (makes it visible to users)
 
         AlertDialog(
             onDismissRequest = {
@@ -241,6 +245,7 @@ fun ProfileScreen(
                             label = { Text("Education Level") }
                         )
 
+                        // dropdown for selectung edu level
                         ExposedDropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
@@ -250,13 +255,14 @@ fun ProfileScreen(
                                     text = { Text(opt) },
                                     onClick = {
                                         tempSelection = opt
-                                        expanded = false
+                                        expanded = false // dropdown closed
                                     }
                                 )
                             }
                         }
                     }
 
+                    // show error if save fails
                     if (eduError != null) {
                         Text(eduError!!, color = MaterialTheme.colorScheme.error)
                     }
@@ -269,9 +275,7 @@ fun ProfileScreen(
                         eduSaving = true
                         eduError = null
 
-                        // debug
-                        //android.util.Log.d("EduLevel", "Saving to users/$uid as $tempSelection (email=$email, name=$displayName)")
-
+                        // saving the fields to the same uid doc
                         firestore.collection("users")
                             .document(uid)
                             .set(
@@ -283,16 +287,9 @@ fun ProfileScreen(
                                 SetOptions.merge()
                             )
                             .addOnSuccessListener {
-                                educationLevel = tempSelection
+                                educationLevel = tempSelection // saves temporary edu level on save
                                 eduSaving = false
                                 showEduDialog = false
-
-                                // debug
-                                android.util.Log.d("EduLevel", "Saved OK. Now reading back users/$uid ...")
-                                firestore.collection("users").document(uid).get()
-                                    .addOnSuccessListener { doc ->
-                                        android.util.Log.d("EduLevel", "ReadBack users/$uid => ${doc.data}")
-                                    }
                             }
                             .addOnFailureListener { e ->
                                 eduSaving = false

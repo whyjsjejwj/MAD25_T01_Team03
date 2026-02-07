@@ -68,6 +68,9 @@ fun HomeScreen(
     val streakDb = remember { np.ict.mad.studybuddy.feature.streaks.StreaksFirestore() } //firestore helper
     var studyStreak  by remember { mutableStateOf(0) } // what is being displayed in home (streak)
     var streakLoading by remember {mutableStateOf(true)} // to show the streak loading
+    var streakInfo by remember { mutableStateOf(np.ict.mad.studybuddy.feature.streaks.StreakInfo(0, "")) } // stores full streak info (streak count and last study date)
+    var showStreakWarning by remember { mutableStateOf(false) } // controls whether warning banner should be shown
+    var streakWarningText by remember { mutableStateOf("") } // the warning message being displayed
 
     LaunchedEffect(uid) {
         notes = notesDb.getNotes(uid)
@@ -78,9 +81,19 @@ fun HomeScreen(
         // load study streak
         streakLoading = true
         try{
-            studyStreak = streakDb.getStreak(uid) // fetching the user's current streak from firebase
+            streakInfo = streakDb.getStreak(uid) // fetch streak data from firestore
+            studyStreak = streakInfo.studyStreak // displays the streak number in the summary card
+
+            showStreakWarning = streakDb.shouldShowStreakWarning(streakInfo) // decides if a warning should be shown
+            // if has the warning banner, show warning message; otherwise dont
+            streakWarningText = if (showStreakWarning){
+                streakDb.streakWarningMessage(streakInfo)
+            } else ""
+
         } catch(e: Exception){
             studyStreak = 0 // set it to 0 if fails
+            showStreakWarning = false
+            streakWarningText = ""
         }finally {
             streakLoading = false // stop the loading
         }
@@ -144,6 +157,21 @@ fun HomeScreen(
                         }
                     }
                 )
+
+                // shows a warning message if streak is about to reset and last reflection was yesterday (will be gone if they do the study reflection)
+                if (showStreakWarning) {
+                    Spacer(Modifier.height(12.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = streakWarningText,
+                            modifier = Modifier.padding(14.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
 
                 Spacer(Modifier.height(16.dp))
                 Text(

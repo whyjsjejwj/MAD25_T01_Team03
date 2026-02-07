@@ -5,6 +5,11 @@ import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.ZoneId
 
+// holds the streak related info for the UI
+data class StreakInfo(
+    val studyStreak: Int, // the current streak count (e.g. 1 days, 2 days)
+    val lastStudyDate: String // the last date the user submitted a reflection
+)
 class StreaksFirestore {
 
     private val db = FirebaseFirestore.getInstance() // the reference to firebase db
@@ -57,9 +62,26 @@ class StreaksFirestore {
         }.await()
     }
 
-    // retrieves current streak from user to display in home screen
-    suspend fun getStreak(uid: String): Int {
+    // retrieves current streak and last study date from user to display in home screen
+    suspend fun getStreak(uid: String): StreakInfo {
         val snap = db.collection("users").document(uid).get().await()
-        return (snap.getLong("studyStreak") ?: 0L).toInt()
+        val streak = (snap.getLong("studyStreak") ?: 0L).toInt() // defaults to safe values if fields doesnt exist
+        val lastDate = snap.getString("lastStudyDate") ?: "" // defaults to safe values if fields doesnt exist
+        return StreakInfo(studyStreak = streak, lastStudyDate = lastDate)
+    }
+
+    // determines if user should see the streak warning message
+    // Conditions: user has an active streak and last reflection submitted was yesterday (means today can continue streak)
+    fun shouldShowStreakWarning(info: StreakInfo): Boolean {
+        val today = todayString()
+        val yesterday = yesterdayString()
+
+        // Warns user only if streak is active AND last study was yesterday
+        return info.studyStreak > 0 && info.lastStudyDate == yesterday
+    }
+
+    // the warning message that will appear if user doesnt do reflection
+    fun streakWarningMessage(info: StreakInfo): String {
+        return "Do a Study Reflection today to keep your ${info.studyStreak}-day streak!"
     }
 }

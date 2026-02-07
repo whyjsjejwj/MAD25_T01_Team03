@@ -61,7 +61,7 @@ fun RegisterScreen(
     var educationLevel by rememberSaveable { mutableStateOf("") } // store chosen value for education level
     var eduExpanded by remember { mutableStateOf(false) } // dropdown open/close
 
-    // ✅ Match Login gradient
+    // Match Login gradient
     val gradient = Brush.verticalGradient(
         listOf(
             Color(0xFFFFFBF2),  // soft cream
@@ -86,7 +86,7 @@ fun RegisterScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // ✅ Logo similar sizing to Login
+                // Logo similar sizing to Login
                 Image(
                     painter = painterResource(id = R.drawable.studybuddylogo_cropped),
                     contentDescription = "StudyBuddy Logo",
@@ -126,7 +126,7 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // for the change education level for the users
+                // dropdown to change education level for the users
                 ExposedDropdownMenuBox(
                     expanded = eduExpanded,
                     onExpandedChange = { eduExpanded = !eduExpanded }
