@@ -20,6 +20,7 @@ import np.ict.mad.studybuddy.core.storage.HabitRepository
 import np.ict.mad.studybuddy.core.storage.DailyHabitLog
 
 // simple data class to hold the stat info for the ui cards
+// makes it easier to pass data around to the grid components
 data class StudyStat(
     val label: String,
     val value: String,
@@ -31,35 +32,41 @@ data class StudyStat(
 @Composable
 fun StudyDashboardScreen(nav: NavController, uid: String) {
     // section database setup
+    // initializes the repository to fetch user data
     val habitRepo = remember { HabitRepository() }
 
     // stores the history logs retrieved from firebase
+    // uses mutablestateof to trigger a ui refresh once data arrives
     var history by remember { mutableStateOf<List<DailyHabitLog>>(emptyList()) }
-    // shows a loading spinner while we fetch data
+
+    // shows a loading spinner while fetching data to prevent a blank screen
     var isLoading by remember { mutableStateOf(true) }
 
     // controls the visibility of the help popup
     var showInfoDialog by remember { mutableStateOf(false) }
 
     // section fetch data
+    // uses launchedeffect to fetch data only once when the screen opens
     LaunchedEffect(uid) {
-        // get the user's entire habit history
+        // gets the user's entire habit history
         history = habitRepo.getHabitHistory(uid)
+        // hides the loading spinner once data is ready
         isLoading = false
     }
 
     // section calculate statistics
-    // 1. total days user has used the app
+    // 1. calculates total days user has used the app (based on log count)
     val totalSessions = history.size
 
-    // 2. total number of checkboxes ticked ever
+    // 2. calculates total number of checkboxes ticked ever
     val totalHabitsDone = history.sumOf { it.completedCount }
 
-    // 3. average habits per day
+    // 3. calculates average habits per day
+    // handles division by zero error if total sessions is 0
     val avgHabits = if (totalSessions > 0) String.format("%.1f", totalHabitsDone.toFloat() / totalSessions) else "0"
 
     // 4. consistency score calculation
-    // assuming 4 daily tasks, we check how many they actually did vs max possible
+    // assumes 4 daily tasks, checks how many they actually did vs max possible
     val maxPossibleHabits = totalSessions * 4
     val consistency = if (maxPossibleHabits > 0) {
         (totalHabitsDone.toFloat() / maxPossibleHabits) * 100
@@ -68,7 +75,7 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
     }
     val consistencyString = String.format("%.0f%%", consistency)
 
-    // prepare the list of stats to display in the grid
+    // prepares the list of stats to display in the grid
     val stats = listOf(
         StudyStat("Consistency", consistencyString, Icons.Default.PieChart, Color(0xFFE91E63)),
         StudyStat("Active Days", "$totalSessions Days", Icons.Default.CalendarMonth, Color(0xFF2196F3)),
@@ -86,6 +93,7 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
                     }
                 },
                 // info button to explain what the stats mean
+                // good for ux so users understand the numbers
                 actions = {
                     IconButton(onClick = { showInfoDialog = true }) {
                         Icon(Icons.Default.Info, contentDescription = "Help", tint = Color(0xFF6D4C41))
@@ -124,11 +132,14 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
             )
         }
 
+        // section loading state
+        // displays a spinner if data is still being fetched from firebase
         if (isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Color(0xFFE7C15A))
             }
         } else {
+            // uses lazycolumn to list stats and history items efficiently
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -144,7 +155,7 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
                 }
 
                 // section stats grid
-                // displays the 4 cards calculated earlier
+                // displays the 4 cards calculated earlier in a 2x2 grid layout
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -166,7 +177,7 @@ fun StudyDashboardScreen(nav: NavController, uid: String) {
                 }
 
                 // section recent history list
-                // shows a list of days where the user studied
+                // shows a scrollable list of days where the user studied
                 if (history.isEmpty()) {
                     item {
                         Text("No activity recorded yet. Start checking off your daily habits!", color = Color.Gray)
@@ -194,6 +205,7 @@ fun InfoRow(icon: ImageVector, title: String, desc: String) {
     }
 }
 
+// reusable stat card component
 @Composable
 fun StatCardFull(stat: StudyStat, modifier: Modifier = Modifier) {
     Card(
@@ -215,6 +227,7 @@ fun StatCardFull(stat: StudyStat, modifier: Modifier = Modifier) {
     }
 }
 
+// reusable history item component
 @Composable
 fun HistoryItemCard(log: DailyHabitLog) {
     Card(
@@ -234,6 +247,7 @@ fun HistoryItemCard(log: DailyHabitLog) {
             }
 
             // color codes the badge based on how many habits were done
+            // green if they did all 4, orange if less
             Surface(
                 color = if (log.completedCount >= 4) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
                 shape = RoundedCornerShape(8.dp)

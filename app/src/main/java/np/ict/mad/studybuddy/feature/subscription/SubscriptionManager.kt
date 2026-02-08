@@ -10,39 +10,43 @@ import java.util.Calendar
 import java.util.Date
 
 // section subscription levels
-// define the three tiers and their hierarchy
+// defines the three tiers and their hierarchy levels
+// using an enum makes it easy to add more tiers later like 'platinum'
 enum class UserTier(val level: Int, val label: String) {
     BRONZE(0, "Free"),
     SILVER(1, "Silver"),
     GOLD(2, "Gold");
 
     // checks if the current tier is high enough for a feature
+    // logic: if my level (e.g. 2) is >= required level (e.g. 1), allow access
     fun hasAccess(required: UserTier): Boolean {
         return this.level >= required.level
     }
 }
 
 // section subscription logic
-// singleton object to handle all subscription related tasks
+// singleton object used here so the subscription state is global
+// ensures the same user tier is accessible from any screen in the app
 object SubscriptionManager {
     private val db = FirebaseFirestore.getInstance()
 
-    // holds the current status so ui can react to changes
+    // holds current tier in a mutable state so the ui updates automatically
+    // whenever the tier changes (e.g. from bronze to gold)
     var userTier by mutableStateOf(UserTier.BRONZE)
     var expiryDate: Date? = null
 
     // section check status
-    // fetches the user's tier from firebase and checks if it has expired
+    // fetches user tier from firebase and strictly checks if the subscription date has expired
     suspend fun fetchUserSubscription(uid: String) {
         try {
             val snapshot = db.collection("users").document(uid).get().await()
             val tierName = snapshot.getString("tier") ?: "BRONZE"
             val expiryTimestamp = snapshot.getTimestamp("subscriptionExpiry")
 
-            // check if there is an expiry date and if it is in the future
+            // logic: checks if there is an expiry date AND if that date is in the future
             if (expiryTimestamp != null && expiryTimestamp.toDate().after(Date())) {
                 try {
-                    // valid subscription found update local state
+                    // valid subscription found, updates local state
                     userTier = UserTier.valueOf(tierName)
                     expiryDate = expiryTimestamp.toDate()
                 } catch (e: Exception) {
@@ -50,41 +54,43 @@ object SubscriptionManager {
                     userTier = UserTier.BRONZE
                 }
             } else {
-                // subscription expired or doesnt exist reset to bronze
+                // crucial: resets to bronze if the subscription date has passed (expired)
                 userTier = UserTier.BRONZE
                 expiryDate = null
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            // fails safe to bronze on error
             userTier = UserTier.BRONZE
         }
     }
 
     // section purchase plan
-    // simulates a purchase by setting the tier and giving 30 days access
+    // simulates a purchase by calculating a new date 30 days from now
     suspend fun purchaseSubscription(uid: String, tier: UserTier) {
         val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, 30)
+        calendar.add(Calendar.DAY_OF_YEAR, 30) // adds 30 days to current time
         val newExpiry = calendar.time
 
-        // prepare data to save to firebase
+        // prepares data to save to firebase
         val data = hashMapOf(
             "tier" to tier.name,
             "subscriptionExpiry" to newExpiry,
             "purchaseDate" to Date()
         )
 
+        // uses merge to update subscription info without overwriting other user data
         db.collection("users").document(uid)
             .set(data, SetOptions.merge())
             .await()
 
-        // update local app state immediately
+        // updates local app state immediately so user sees the upgrade instantly
         userTier = tier
         expiryDate = newExpiry
     }
 
     // section cancel plan
-    // downgrades the user back to bronze immediately, for demo purposes
+    // immediately downgrades user to bronze for demo purposes
     suspend fun cancelSubscription(uid: String) {
         val data = hashMapOf(
             "tier" to "BRONZE",
