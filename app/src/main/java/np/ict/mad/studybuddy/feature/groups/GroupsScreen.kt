@@ -21,6 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlin.random.Random
 
+// Data class representing a group document in Firestore.
+// We map Firestore fields into this Kotlin model for easier UI rendering.
 data class StudyGroup(
     val id: String = "",
     val name: String = "",
@@ -50,27 +52,30 @@ fun GroupsScreen(
     var showCreate by remember { mutableStateOf(false) }
     var showJoin by remember { mutableStateOf(false) }
 
-    // NEW: choose action dialog (group vs individual)
+    //choose action dialog (group vs individual)
     var showNewChooser by remember { mutableStateOf(false) }
 
-    // NEW: map uid -> name for DM title rendering
+    //map uid -> name for DM title rendering
     var directoryNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
 
+    // Loads display names for DM participants so we can show "John" instead of a raw uid.
+    // Uses a cache so we don't fetch the same user repeatedly.
     suspend fun loadDirectoryNames(uids: List<String>) {
         val missing = uids.filter { it.isNotBlank() && !directoryNames.containsKey(it) }
         if (missing.isEmpty()) return
 
         try {
+            // Fetch multiple names concurrently using async + awaitAll for better performance
             val pairs = missing.map { targetUid ->
                 scope.async {
-                    // 1) try userDirectory (recommended)
+                    // 1) Try userDirectory first (fast lookup)
                     try {
                         val d = db.collection("userDirectory").document(targetUid).get().await()
                         val dn = d.getString("displayName")
                         if (!dn.isNullOrBlank()) return@async (targetUid to dn)
                     } catch (_: Exception) { }
 
-                    // 2) fallback users (your rules allow get)
+                    // 2) Fallback to users collection if directory not available
                     try {
                         val u = db.collection("users").document(targetUid).get().await()
                         val un = u.getString("displayName") ?: "Unknown"
@@ -89,6 +94,8 @@ fun GroupsScreen(
         }
     }
 
+    // Loads all groups where the current user is a member.
+    // This updates the groups list in state, which automatically updates the UI.
     suspend fun refresh() {
         loading = true
         error = null
@@ -98,6 +105,7 @@ fun GroupsScreen(
                 .get()
                 .await()
 
+            // Convert Firestore documents into StudyGroup objects
             val mapped = snap.documents.map { doc ->
                 StudyGroup(
                     id = doc.id,
@@ -112,7 +120,7 @@ fun GroupsScreen(
 
             groups = mapped
 
-            // preload names for DM rows (other participant)
+            // Preload names for DMs so DM rows can show the other person's name
             val dmOtherUids = mapped
                 .filter { it.isDirect }
                 .mapNotNull { g -> g.members.firstOrNull { it != uid } }
@@ -127,6 +135,7 @@ fun GroupsScreen(
         }
     }
 
+    // Automatically load groups when screen opens or uid changes
     LaunchedEffect(uid) { refresh() }
 
     // simple random join code generator
@@ -160,13 +169,14 @@ fun GroupsScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
+                //Join button opens join dialog
                 actions = {
                     TextButton(onClick = { showJoin = true }) { Text("Join") }
                 }
             )
         },
 
-        // FAB bottom-right (WhatsApp style)
+        // Floating action button opens chooser (create group vs DM)
         floatingActionButton = {
             FloatingActionButton(onClick = { showNewChooser = true }) {
                 Icon(Icons.Default.Add, contentDescription = "New")
@@ -191,6 +201,7 @@ fun GroupsScreen(
                 Spacer(Modifier.height(12.dp))
             }
 
+            //Empty state when user has not joined any groups yet
             if (groups.isEmpty() && !loading) {
                 Text("No groups yet.")
                 Spacer(Modifier.height(12.dp))
@@ -199,24 +210,29 @@ fun GroupsScreen(
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(groups, key = { it.id }) { g ->
 
-                        // DM title: show other user
+                        // If this is a direct message,
+                        // find the OTHER user's UID
                         val otherUid = remember(g.id, g.members) {
                             if (g.isDirect) g.members.firstOrNull { it != uid } else null
                         }
 
+                        // Decide what title to show on the card
+                        // - Group chat → show group name
+                        // - Direct message → show other user's name
                         val displayTitle = remember(g.name, g.isDirect, otherUid, directoryNames) {
                             if (g.isDirect) {
                                 val n = otherUid?.let { directoryNames[it] }
-                                n ?: "Chat"
+                                n ?: "Chat"  //fallback if name not loaded yet
                             } else {
                                 g.name
                             }
                         }
 
+                        //Each group is displayed as a clickable card
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onOpenGroup(g.id) },
+                                .clickable { onOpenGroup(g.id) }, //Navigate to chat screen
                             elevation = CardDefaults.cardElevation(2.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -224,7 +240,7 @@ fun GroupsScreen(
 
                                 Spacer(Modifier.height(4.dp))
 
-                                // Hide join code for DM
+                                // Show join code only for group chats
                                 if (!g.isDirect) {
                                     Text(
                                         text = "Join Code: ${g.joinCode.ifBlank { "(missing)" }}",
@@ -232,7 +248,7 @@ fun GroupsScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 } else {
-                                    // optional subtle subtitle for DM
+                                    // Direct messages do not have join codes
                                     Text(
                                         text = "Direct message",
                                         style = MaterialTheme.typography.bodySmall,
@@ -247,7 +263,8 @@ fun GroupsScreen(
         }
     }
 
-    // ---------- NEW (CHOOSER) DIALOG ----------
+    // Dialog that appears when user taps the + button
+    // Lets user choose between creating a group or starting a DM
     if (showNewChooser) {
         AlertDialog(
             onDismissRequest = { showNewChooser = false },
@@ -257,6 +274,7 @@ fun GroupsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("What would you like to create?")
 
+                    // Option to create a new group
                     Button(
                         onClick = {
                             showNewChooser = false
@@ -269,6 +287,7 @@ fun GroupsScreen(
                         Text("Create group")
                     }
 
+                    // Option to start a 1-to-1 direct message
                     OutlinedButton(
                         onClick = {
                             showNewChooser = false
@@ -296,7 +315,7 @@ fun GroupsScreen(
     }
 
 
-    // ---------- JOIN DIALOG ----------
+    // Dialog for joining a group using a join code
     if (showJoin) {
         var code by remember { mutableStateOf("") }
         var joinError by remember { mutableStateOf<String?>(null) }
@@ -327,6 +346,8 @@ fun GroupsScreen(
                             joining = true
                             joinError = null
                             try {
+
+                                //Firestore query to find group by join code
                                 val snap = db.collection("groups")
                                     .whereEqualTo("joinCode", code)
                                     .limit(1)
@@ -347,7 +368,7 @@ fun GroupsScreen(
 
                                     val groupId = doc.id
 
-                                    // race-safe join
+                                    //Safely add user to members list without duplicates
                                     db.collection("groups").document(groupId)
                                         .update("members", FieldValue.arrayUnion(uid))
                                         .await()
@@ -373,7 +394,7 @@ fun GroupsScreen(
         )
     }
 
-    // ---------- CREATE DIALOG ----------
+    //Dialog for creating a new group
     if (showCreate) {
         var name by remember { mutableStateOf("") }
         var createError by remember { mutableStateOf<String?>(null) }
@@ -406,8 +427,11 @@ fun GroupsScreen(
                             creating = true
                             createError = null
                             try {
+
+                                //Generate a short, unique join code
                                 val joinCode = generateUniqueJoinCode()
 
+                                //Data stored in Firestore for a group
                                 val data = mapOf(
                                     "name" to name.trim(),
                                     "createdBy" to uid,

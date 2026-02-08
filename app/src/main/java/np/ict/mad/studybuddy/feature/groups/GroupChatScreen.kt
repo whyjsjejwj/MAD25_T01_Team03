@@ -73,10 +73,11 @@ fun GroupChatScreen(
 
     val isOwner = uid == ownerUid
 
-    // ---------- helper functions ----------
+    //helper functions
 
-    // Open PDF using whatever app can handle the link
     fun openPdf(url: String) {
+        // Opens a PDF link using any external app
+        // (e.g. Chrome, Google Drive, PDF viewer)
         try {
             val intent = Intent(Intent.ACTION_VIEW, url.toUri())
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -88,16 +89,30 @@ fun GroupChatScreen(
 
     // Load display names (simple loop)
     fun loadMemberNamesIfNeeded(uids: List<String>) {
+        //This function is used to load display names for group members
+        //who have not sent any messages yet.
+        //
+        //Message sender names are already stored in each message,
+        //but the members list only contains user IDs.
+        //This function converts those user IDs into readable names.
+
+        // Find only the user IDs that we do not already have names for.
         val missing = uids.filter { it.isNotBlank() && !memberNames.containsKey(it) }
+
+        // If all member names are already known, do nothing.
         if (missing.isEmpty()) return
 
         scope.launch {
             loadingMembers = true
             try {
                 val updated = memberNames.toMutableMap()
+
+                // Load display names for each missing user ID.
                 for (mUid in missing) {
                     val name = try {
                         val doc = db.collection("users").document(mUid).get().await()
+
+                        // Read the displayName field, or use "Unknown" as a fallback.
                         doc.getString("displayName") ?: "Unknown"
                     } catch (_: Exception) {
                         "Unknown"
@@ -113,12 +128,21 @@ fun GroupChatScreen(
 
     // Load DM other person's name
     fun loadDirectOtherName(otherUid: String) {
+
+        // This function is used only in Direct Messages (DMs).
+        // Since a DM has only two users, we fetch the other user's name
+        // so the top bar can show their name instead of a group title.
+
         scope.launch {
             directOtherName = try {
+                // First try to get the name from a lightweight user directory.
                 val dirDoc = db.collection("userDirectory").document(otherUid).get().await()
                 val name1 = dirDoc.getString("displayName")
+
+                // If found, use it.
                 if (!name1.isNullOrBlank()) name1
                 else {
+                    // Otherwise, fall back to the full users collection.
                     val userDoc = db.collection("users").document(otherUid).get().await()
                     userDoc.getString("displayName") ?: "Unknown"
                 }
@@ -128,9 +152,9 @@ fun GroupChatScreen(
         }
     }
 
-    // ---------- Firestore listeners ----------
+    //Firestore listeners
 
-    // Listen to group doc changes
+    //Listen to group doc changes
     DisposableEffect(groupId) {
         val reg = db.collection("groups").document(groupId)
             .addSnapshotListener { snap, e ->
@@ -158,7 +182,7 @@ fun GroupChatScreen(
         onDispose { reg.remove() }
     }
 
-    // Listen to messages
+    //Listen to messages
     DisposableEffect(groupId) {
         val reg = db.collection("groups")
             .document(groupId)
@@ -188,13 +212,23 @@ fun GroupChatScreen(
                 title = topTitle,
                 isDirect = isDirect,
                 isOwner = isOwner,
+
+                //Navigate back to previous screen
                 onBack = onBack,
+
+                //Open members bottom sheet
                 onMembers = { showMembers = true },
+
+                //Open edit group name dialog
                 onEdit = {
                     newGroupName = groupName
                     showEditName = true
                 },
+
+                //Open clear chat confirmation dialog
                 onClear = { showClearConfirm = true },
+
+                //Open delete group confirmation dialog
                 onDelete = { showDeleteConfirm = true }
             )
         }
@@ -406,19 +440,38 @@ private fun GroupChatTopBar(
     onClear: () -> Unit,
     onDelete: () -> Unit
 ) {
+    //Top app bar for the group chat screen.
+    //Displays the chat title and action buttons based on user role.
+
     TopAppBar(
+        //Display chat title (group name or direct chat name)
         title = { Text(title) },
+
+        //Back navigation button
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
         },
+        //Action buttons on the right side of the app bar
         actions = {
+
+            //Show group-related actions only for group chats (not direct messages)
             if (!isDirect) {
+
+                //Button to open the members list
                 TextButton(onClick = onMembers) { Text("Members") }
+
+                //Show owner-only actions
                 if (isOwner) {
+
+                    //Rename group
                     TextButton(onClick = onEdit) { Text("Edit") }
+
+                    //Clear chat history for all members
                     TextButton(onClick = onClear) { Text("Clear") }
+
+                    //Delete group
                     TextButton(
                         onClick = onDelete,
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
@@ -438,16 +491,30 @@ private fun MessageListNoWeight(
     onOpenPdf: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+
+    //This composable displays the list of chat messages.
+    //It uses LazyColumn for efficient rendering of long message lists.
+
     LazyColumn(
         modifier = modifier.padding(horizontal = 12.dp),
+
+        //Add spacing between each message bubble
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(vertical = 10.dp)
     ) {
+        //For each message in the list
         items(messages) { msg ->
             MessageCard(
+                //Each message is displayed using MessageCard
                 msg = msg,
+
+                //Used to determine if the message belongs to the current user
                 myUid = myUid,
+
+                //Owner indicator is shown only in group chats
                 isOwnerSender = (!isDirect && msg.senderUid == ownerUid),
+
+                //Callback to open PDF when a file message is clicked
                 onOpenPdf = { onOpenPdf(msg.fileUrl) }
             )
         }
@@ -463,10 +530,14 @@ private fun InputBarNoWeight(
     onSend: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    //This composable represents the input bar at the bottom of the chat screen.
+    //It allows users to type messages, attach files, and send messages.
 
     Box(
+        //Container for aligning icons and text field
         modifier = modifier.padding(12.dp)
     ) {
+        //Attach button (left side)
         IconButton(
             onClick = onAttach,
             modifier = Modifier.align(Alignment.CenterStart)
@@ -474,7 +545,9 @@ private fun InputBarNoWeight(
             Icon(Icons.Default.AttachFile, contentDescription = "Attach")
         }
 
+        //Send button (right side)
         IconButton(
+            //Disable send when input is empty or message is being sent
             enabled = input.isNotBlank() && !sending,
             onClick = onSend,
             modifier = Modifier.align(Alignment.CenterEnd)
@@ -482,10 +555,15 @@ private fun InputBarNoWeight(
             Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
         }
 
+        //Text input field for typing a message
         OutlinedTextField(
             value = input,
             onValueChange = onInputChange,
+
+            //Placeholder text shown when input is empty
             placeholder = { Text("Message...") },
+
+            //Single-line input for chat-style messages
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
@@ -494,14 +572,20 @@ private fun InputBarNoWeight(
     }
 }
 
-/* ---------------- Dialogs / Sheets ---------------- */
+//Dialogs
 
 @Composable
 private fun ClearChatDialog(show: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    //Confirmation dialog shown when a user attempts to clear the chat.
+    //This prevents accidental clearing of chat history.
+
+    //If the dialog should not be visible, exit early.
     if (!show) return
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Clear chat") },
+
+        // Warning message to inform the user of the consequence
         text = { Text("This clears the chat for everyone. This cannot be undone.") },
         confirmButton = { Button(onClick = onConfirm) { Text("Clear") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
@@ -510,10 +594,15 @@ private fun ClearChatDialog(show: Boolean, onDismiss: () -> Unit, onConfirm: () 
 
 @Composable
 private fun DeleteGroupDialog(show: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    // Confirmation dialog shown when the group owner wants to delete the group.
+    // This is a destructive action and requires explicit confirmation.
+
     if (!show) return
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Delete group") },
+
+        // Warning message describing the irreversible action
         text = { Text("This will permanently delete the group and all messages. This cannot be undone.") },
         confirmButton = {
             Button(
@@ -533,10 +622,15 @@ private fun EditGroupNameDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
+    //Dialog that allows the group owner to rename the group.
+    //Includes validation to prevent empty group names.
+
     if (!show) return
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit group name") },
+
+        //Text input field for the new group name
         text = {
             OutlinedTextField(
                 value = newName,
@@ -545,6 +639,7 @@ private fun EditGroupNameDialog(
                 modifier = Modifier.fillMaxWidth()
             )
         },
+        //Save button enabled only when input is not blank
         confirmButton = {
             Button(enabled = newName.trim().isNotBlank(), onClick = onSave) { Text("Save") }
         },
@@ -564,14 +659,20 @@ private fun MembersSheetNoWeight(
     onDismiss: () -> Unit,
     onRemove: (String) -> Unit
 ) {
+    //This composable displays a bottom sheet that shows
+    //all members in a group chat.
+
+    //If the bottom sheet should not be visible, exit early.
     if (!show) return
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
+        //Called when user swipes down or taps outside the sheet
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            //Sheet title
             Text(
                 text = "Group Members",
                 style = MaterialTheme.typography.titleLarge,
@@ -579,19 +680,26 @@ private fun MembersSheetNoWeight(
             )
             Spacer(Modifier.height(8.dp))
 
+            //Show loading indicator while member names are being fetched
             if (loadingMembers) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(12.dp))
             }
 
+            //List of members in the group
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 420.dp),
+                    .heightIn(max = 420.dp), //limit height so sheet doesn’t cover whole screen
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // Display each member using their user ID
                 items(members) { memberUid ->
+
+                    // Get display name from cached map, or show placeholder
                     val name = memberNames[memberUid] ?: "Loading..."
+
+                    // Check if this member is the group owner
                     val isRowOwner = memberUid == ownerUid
 
                     Card(
@@ -604,22 +712,27 @@ private fun MembersSheetNoWeight(
                                 .fillMaxWidth()
                                 .padding(14.dp)
                         ) {
+                            //Left side: member name and role
                             Column(
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
-                                    .padding(end = 90.dp) // leave room for Remove button
+                                    .padding(end = 90.dp) //leave room for Remove button
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
+                                        //Display member name
                                         text = name,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold
                                     )
+
+                                    //Crown icon indicates group owner
                                     if (isRowOwner) {
                                         Spacer(Modifier.width(8.dp))
                                         Text("👑")
                                     }
                                 }
+                                //Display member role
                                 Text(
                                     text = if (isRowOwner) "Owner" else "Member",
                                     style = MaterialTheme.typography.bodySmall,
@@ -627,6 +740,9 @@ private fun MembersSheetNoWeight(
                                 )
                             }
 
+                            //Show Remove button ONLY if:
+                            //- current user is the owner
+                            //- target member is not the owner
                             if (isOwner && !isRowOwner) {
                                 TextButton(
                                     onClick = { onRemove(memberUid) },
@@ -655,27 +771,48 @@ private fun NotePickerDialog(
     onDismiss: () -> Unit,
     onPickNote: (FirestoreNote) -> Unit
 ) {
+    //This dialog allows the user to select one of their notes
+    //and send it to the chat as a PDF file.
+
+    //If the dialog should not be shown, return immediately.
     if (!show) return
 
     AlertDialog(
+        //Called when user taps outside or presses back
         onDismissRequest = onDismiss,
+
+        //Dialog title shown at the top
         title = { Text("Send note as PDF") },
+
+        //Main content of the dialog
         text = {
             when {
+
+                //Show a loading indicator while notes are being fetched
                 loadingNotes -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+
+                //If the user has no notes, show a simple message
                 notes.isEmpty() -> Text("You have no notes yet.")
                 else -> {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                        //Limit to first 8 notes to keep UI simple
                         notes.take(8).forEach { note ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
+
+                                    //Disable clicking while a note is being sent
                                     .clickable(enabled = !sending) { onPickNote(note) },
                                 elevation = CardDefaults.cardElevation(1.dp)
                             ) {
                                 Column(Modifier.padding(12.dp)) {
+
+                                    //Display note title (fallback if empty)
                                     Text(note.title.ifBlank { "Untitled" })
                                     Spacer(Modifier.height(4.dp))
+
+                                    //Show a short preview of note content
                                     Text(note.content, maxLines = 2, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
@@ -684,13 +821,14 @@ private fun NotePickerDialog(
                 }
             }
         },
+        //Close button at bottom of dialog
         confirmButton = {
             TextButton(enabled = !sending, onClick = onDismiss) { Text("Close") }
         }
     )
 }
 
-// Message bubble
+//Message bubble
 @Composable
 private fun MessageCard(
     msg: GroupMessage,
@@ -708,10 +846,15 @@ private fun MessageCard(
 
     Row(
         modifier = Modifier.fillMaxWidth(),
+
+        //Align message to the right if it is mine, else to the left
         horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
     ) {
         Surface(
+            //Choose bubble color based on sender
             color = if (isMine) myBubble else otherBubble,
+
+            //Rounded chat bubble shape
             shape = RoundedCornerShape(
                 topStart = 16.dp,
                 topEnd = 16.dp,
@@ -726,6 +869,7 @@ private fun MessageCard(
                     .widthIn(max = 320.dp)
             ) {
                 if (!isMine) {
+                    //Show sender name only for messages not sent by me
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             msg.senderName,
@@ -733,6 +877,7 @@ private fun MessageCard(
                             fontWeight = FontWeight.SemiBold,
                             color = otherText
                         )
+                        //Show crown icon if sender is group owner
                         if (isOwnerSender) {
                             Spacer(Modifier.width(6.dp))
                             Text("👑", style = MaterialTheme.typography.labelMedium)
@@ -741,11 +886,17 @@ private fun MessageCard(
                     Spacer(Modifier.height(4.dp))
                 }
 
+                //Handle file messages (PDF)
                 if (msg.type == "file") {
+
+                    //Show file name
                     Text("📄 ${msg.fileName}", color = if (isMine) myText else otherText)
                     Spacer(Modifier.height(8.dp))
+
+                    //Button to open the PDF
                     TextButton(onClick = onOpenPdf) { Text("Open PDF") }
                 } else {
+                    //Normal text message
                     Text(msg.text, color = if (isMine) myText else otherText)
                 }
             }

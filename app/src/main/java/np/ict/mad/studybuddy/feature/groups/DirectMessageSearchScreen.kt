@@ -44,12 +44,16 @@ fun DirectMessageSearchScreen(
             loading = true
             error = null
             try {
+                //If query contains "@", treat it like an email search
+                //Else treat it like a name prefix search
                 results = if (q.contains("@")) {
                     directoryDb.findByEmail(q)
                 } else {
                     directoryDb.findByNamePrefix(q)
+                    //Remove invalid users and prevent searching yourself
                 }.filter { it.uid.isNotBlank() && it.uid != myUid }
             } catch (e: Exception) {
+                //Display error instead of crashing app
                 error = e.message ?: "Search failed"
             } finally {
                 loading = false
@@ -76,6 +80,7 @@ fun DirectMessageSearchScreen(
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
+            //Search input box
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -87,6 +92,7 @@ fun DirectMessageSearchScreen(
 
             Spacer(Modifier.height(10.dp))
 
+            //Search button
             Button(
                 onClick = { doSearch() },
                 enabled = !loading,
@@ -95,6 +101,7 @@ fun DirectMessageSearchScreen(
                 Text(if (loading) "Searching..." else "Search")
             }
 
+            //Show error if any
             error?.let {
                 Spacer(Modifier.height(10.dp))
                 Text(it, color = MaterialTheme.colorScheme.error)
@@ -102,10 +109,12 @@ fun DirectMessageSearchScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            //Show "No users found" if search completed but no results
             if (!loading && results.isEmpty() && query.isNotBlank()) {
                 Text("No users found.")
             }
 
+            //Display search results in a scrollable list
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxSize()
@@ -114,14 +123,19 @@ fun DirectMessageSearchScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
+
+                            //Clicking a user starts (or opens) a DM chat
                             .clickable {
                                 scope.launch {
+
+                                    //createOrOpenDirectChat returns the groupId for the DM
                                     val gid = dmManager.createOrOpenDirectChat(myUid, user.uid)
-                                    onOpenChat(gid)
+                                    onOpenChat(gid) //navigate to chat screen
                                 }
                             }
                     ) {
                         Column(Modifier.padding(14.dp)) {
+                            //Display name + email for the user
                             Text(user.displayName.ifBlank { "Unnamed" }, style = MaterialTheme.typography.titleMedium)
                             Text(user.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

@@ -13,25 +13,45 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import np.ict.mad.studybuddy.core.storage.NoteCategory
 
+/**
+ * Dialog that allows users to manage their note subjects (categories).
+ *
+ * Users can:
+ * - View all subjects
+ * - Rename a subject
+ * - Delete a subject
+ */
 @Composable
 fun ManageSubjectsDialog(
-    categories: List<NoteCategory>,
-    onDismiss: () -> Unit,
-    onDelete: (NoteCategory) -> Unit,
-    onRename: (NoteCategory, String) -> Unit
+    categories: List<NoteCategory>, //List of existing subjects
+    onDismiss: () -> Unit, //Close the dialog
+    onDelete: (NoteCategory) -> Unit,  //Callback when user deletes a subject
+    onRename: (NoteCategory, String) -> Unit //Callback when user renames a subject
 ) {
+
+    //Tracks which subject is being confirmed for deletion
     var confirmDeleteTarget by remember { mutableStateOf<NoteCategory?>(null) }
+
+    //Tracks which subject is being renamed
     var renameTarget by remember { mutableStateOf<NoteCategory?>(null) }
+
+    //Holds the new name entered by the user
     var renameText by remember { mutableStateOf("") }
 
+    /**
+     * MAIN dialog:
+     * Shows the list of subjects with Rename and Delete buttons
+     */
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Manage subjects") },
         text = {
             if (categories.isEmpty()) {
+                // Case: no subjects exist
                 Text("No subjects yet.")
             } else {
                 LazyColumn(
+                    // Scrollable list of subjects
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 360.dp)
@@ -44,11 +64,13 @@ fun ManageSubjectsDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
+                                //Subject name
                                 text = cat.name,
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.weight(1f)
                             )
 
+                            //Rename button
                             IconButton(onClick = {
                                 renameTarget = cat
                                 renameText = cat.name
@@ -56,6 +78,7 @@ fun ManageSubjectsDialog(
                                 Icon(Icons.Default.Edit, contentDescription = "Rename subject")
                             }
 
+                            //Delete button
                             IconButton(onClick = { confirmDeleteTarget = cat }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Delete subject")
                             }
@@ -66,11 +89,15 @@ fun ManageSubjectsDialog(
             }
         },
         confirmButton = {
+            //Done button just closes the dialog
             TextButton(onClick = onDismiss) { Text("Done") }
         }
     )
 
-    // Rename dialog
+    /**
+     * RENAME dialog:
+     * Opens when user clicks the Edit icon
+     */
     val rt = renameTarget
     if (rt != null) {
         AlertDialog(
@@ -102,7 +129,10 @@ fun ManageSubjectsDialog(
         )
     }
 
-    // Delete confirm dialog
+    /**
+     * DELETE confirmation dialog:
+     * Prevents accidental deletion
+     */
     val dt = confirmDeleteTarget
     if (dt != null) {
         AlertDialog(

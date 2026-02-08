@@ -257,6 +257,7 @@ fun NotesScreen(
             onDismiss = { showManageSubjects = false },
             onDelete = { cat ->
                 scope.launch {
+                    //save to firebase
                     notesDb.deleteCategoryAndUnassignNotes(username, cat.id)
 
                     categories = notesDb.getCategories(username)
@@ -274,6 +275,7 @@ fun NotesScreen(
                 notes = notes.map { n -> if (n.categoryId == cat.id) n.copy(categoryName = clean) else n }
 
                 scope.launch {
+                    //saving to database
                     notesDb.renameCategory(username, cat.id, clean)
                     notesDb.updateNotesCategoryName(username, cat.id, clean)
 
