@@ -82,7 +82,7 @@ fun SubscriptionScreen(uid: String, onClose: () -> Unit) {
         TierCard(
             title = "Silver Tier",
             price = "$1.99 / mo",
-            features = listOf("Zen Focus Sounds", "Remove Ads", "Support the Devs"),
+            features = listOf("Mood and Diary Journal", "Remove Ads", "Support the Devs"),
             color = Color(0xFFC0C0C0), // silver color
             onClick = {
                 scope.launch {

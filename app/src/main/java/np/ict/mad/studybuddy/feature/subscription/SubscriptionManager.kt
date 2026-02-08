@@ -84,7 +84,7 @@ object SubscriptionManager {
     }
 
     // section cancel plan
-    // downgrades the user back to bronze immediately
+    // downgrades the user back to bronze immediately, for demo purposes
     suspend fun cancelSubscription(uid: String) {
         val data = hashMapOf(
             "tier" to "BRONZE",

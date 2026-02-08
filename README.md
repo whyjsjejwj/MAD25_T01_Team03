@@ -56,7 +56,7 @@ Students often struggle with:
 - Poor time management  
 - Inefficient revision habits  
 
-### StudyBuddy aims to solve these by:
+### StudyBuddy aims to solve these by
 
 - Offering a centralized platform for studying  
 - Encouraging productive routines using Pomodoro  
@@ -70,35 +70,31 @@ The primary objective is to help students build **consistent, organized, and eff
 
 ## Design Considerations
 
-### 1. Student-Centric UI  
+### 1. Student-Centric UI
 A clean interface that reduces cognitive load and improves navigation for younger and older students.
 
-### 2. Modular Functions  
-Each module (Notes, Timer, Motivation Hub, Quiz Zone) is independently built for scalability and clarity.
+### 2. Modular Codebase
+Each module (Notes, Timer, Motivation Hub, Quiz Zone) is independently built. This separation allowed different team members to work on complex features (like Media Players or Chat Systems) simultaneously without causing merge conflicts.
 
-### 3. Offline-First Architecture  
-Core features such as **Notes, Motivational quotes, and Quizzes** are now stored using Firebase Firestore, ensuring secure cloud backup and multi-device accessibility.
-The **Pomodoro timer** will have its data stored offline in Share Preference.
+### 3. Expanded Cloud Ecosystem (Stage 2 Upgrade)
+Building on the basic Firebase integration from Stage 1 (Auth & Static Data), Stage 2 introduces a **comprehensive real-time synchronization system**.
+- **User-Centric Data Sync:** We moved from local-only storage for user generated content to **Firestore Cloud Sync**, allowing Notes, Habit Logs, and Mood Diaries to be accessible across multiple devices.
+- **Real-Time Interactivity:** The architecture now supports live data listeners, enabling features like **instant messaging** in Study Groups and dynamic updates to the Subscription status.
+- **Offline Reliability:** We utilized Firestore’s offline persistence to ensure students can still access and edit their work without internet, with changes automatically pushing to the cloud upon reconnection.
 
-### 4. Consistency & Familiarity  
-Design inspiration taken from Notion, Quizlet, and Forest to maintain familiarity while offering unique features.
+### 4. Background Processing & Services (Stage 2 Upgrade)
+To create a seamless study experience, we implemented Android **Foreground Services**.
+- **Continuous Operation:** Features like the **Lo-fi Media Player** can run independently of the main UI, ensuring study music isn't interrupted when the user navigates to other screens or locks their phone.
+- **Resource Management:** The app manages system resources efficiently to prevent battery drain during long study sessions.
 
-### 5. Expandability for Stage 2  
-The current architecture is intentionally modular, allowing new features to be added without disrupting existing components. This enables future enhancements such as cloud synchronization, usage analytics, and notification-based reminders.
-
-Cloud Sync: Centralizing user data in Firebase allows notes, quiz progress, motivation preferences, and timer history to be accessed across multiple devices. This improves reliability and prevents data loss.
-
-Analytics & Insights: By tracking study duration, streaks, frequently used features, and quiz performance, the app can provide personalized recommendations to improve study habits.
-
-Smart Notifications: Reminder systems can encourage users to return to the app, complete study sessions, or review saved notes, supporting long-term engagement and consistency.
-
-Feature Scalability: Each module (Notes, Timer, Motivation Hub, Quiz Zone) is built as an independent component, making it easy to introduce new standalone features such as habit tracking, study streak achievements, or external API integrations without requiring major redesigns.
-
-This forward-thinking structure ensures StudyBuddy can grow into a more intelligent, personalized, and supportive study ecosystem over time.
+### 5. Engagement & Gamification Engine (Stage 2 Upgrade)
+We shifted focus from simple utility tools to a system designed for **long-term retention**.
+- **Behavioral Loop:** By integrating **Streaks, Mood Tracking, and Progression Tiers**, the app psychologically rewards consistent usage.
+- **Data-Driven Insights:** The architecture now aggregates user activity (quizzes taken, habits checked) to provide meaningful analytics, transforming raw data into motivation.
 
 ---
 
-## Feature Overview
+## Feature Overview (Stage 1)
 
 ### **1. Login + Notes Manager** (By Zhi Xun)
 This feature allows users to create an account, log in securely, and manage their study notes in an organized manner. Students can create, edit, delete, and categorize notes by subject or module.
@@ -126,37 +122,92 @@ Self-testing is one of the most effective ways to strengthen long-term memory. T
 
 ---
 
+## Feature Overview (Stage 2)
+
+### **1. Study Groups & Advanced Notes** (By Zhi Xun)
+This enhancement allows users to group their notes into specific categories (Subjects/Modules) for better organization. Additionally, it introduces a Study Group feature where users can join groups and engage in real-time chat (1-on-1 or group) to discuss topics and share resources.
+
+Reason for implementation: Learning is often collaborative. By adding real-time messaging and better note organization, the app shifts from a solitary tool to a collaborative platform. This encourages peer-to-peer learning and ensures that as note collections grow, they remain structured and easy to navigate.
+
+### **2. Subscription System & Analytics Dashboard** (By Zhizhong)
+This feature introduces a tiered membership system (Free, Silver, Gold) that unlocks premium tools based on the user's subscription status. It includes an Analytics Dashboard (Gold tier) that visualizes study consistency and habits, and a Mood Calendar (Silver tier) for tracking mental well-being alongside study sessions.
+
+Reason for implementation: To simulate a real-world app economy, this feature adds value by gamifying progress and providing deeper insights. The Analytics Dashboard helps students identify their study patterns, while the Mood Calendar addresses the mental health aspect of studying, ensuring students are not just working hard, but working sustainably.
+
+### **3. Lo-fi Beats Media Player** (By Arjun)
+A dedicated media player embedded within the app that streams Lo-fi beats to help students focus. This feature utilizes a Foreground Service, ensuring the music continues playing seamlessly even when the user navigates away from the app or locks their phone.
+
+Reason for implementation: Many students rely on background music to maintain concentration. Integrating a specialized media player prevents students from needing to switch apps (and potentially get distracted by other content) just to control their music, creating a frictionless "deep work" environment.
+
+### **4. Study Reflection Journal & Streaks** (By Daniel)
+This feature allows users to log daily reflections on what they learned and how they felt about their progress. It is paired with a Streak System that tracks consecutive days of activity, gamifying consistency.
+
+Reason for implementation: Active recall and reflection are critical for long-term retention. The journal encourages metacognition (thinking about thinking), while the streak system leverages behavioral psychology to motivate users to return to the app daily, building the habit of consistent study.
+
+---
+
+## Current State of Deployment
+
+**Status:** **Stage 2 Completed / Production Ready**
+
+The application has successfully transitioned from a prototype to a fully functional, data-driven application.
+
+- **Authentication:** Fully operational (Login, Register, Persistent Session) linked to Firebase Auth.
+- **Database:** Migrated to **Firebase Firestore** for real-time data syncing of Notes, Habits, and User Profiles.
+- **Advanced Logic:** Implemented complex systems for **background media playback**, **real-time messaging**, and **dynamic feature provisioning**, moving beyond simple data entry.
+- **Stability:** The app handles data persistence, network states, and lifecycle changes securely.
+
+The app is currently deployed via **Android Studio (Local Emulator/Device)**.
+
+---
+
 ## User Guide
 
 To setup and run the application in your local environment, please follow these steps:
 
 ### Prerequisites
 * Android Studio Ladybug (or newer)
-* Minimum SDK: API 24 (Android 7.0)
-* Recommended Emulator: Pixel 8 API 35
+- Minimum SDK: API 24 (Android 7.0)
+- Recommended Emulator: Pixel 8 API 35
 
 ### Installation & Running
-1.  **Clone the Repository:**
+
+1. **Clone the Repository:**
+
     ```bash
     git clone https://github.com/whyjsjejwj/MAD25_T01_Team03.git
     ```
-2.  **Open in Android Studio:**
+
+2. **Open in Android Studio:**
     Select `File > Open` and navigate to the cloned folder.
-3.  **Sync Gradle:**
+3. **Sync Gradle:**
     Allow Android Studio to download necessary dependencies.
-4.  **Run the App:**
+4. **Run the App:**
     Select an emulator or connected device and click the **Run** (Play) button.
 
 ---
 
-## Stage 1 Feature Responsibilities
+## Roles & Contributions
+
+### Stage 1: Core Features (Foundations)
 
 | Member | Feature | Description |
 |--------|---------|-------------|
-| **Pey Zhi Xun** | Login + Notes Manager | Authentication + notes CRUD and organization |
-| **Fan Zhizhong** | Motivation Hub | Quotes, study tips, and favourite saving |
-| **Arjun Vivekananthan** | Study Timer | Pomodoro timer and UI for focus sessions |
-| **Daniel Sha** | Quiz Zone | Quiz interface, scoring logic, and question sets |
+| **Pey Zhi Xun** | Login + Notes Manager | Authentication, CRUD operations for notes, and RecyclerView organization. |
+| **Fan Zhizhong** | Motivation Hub | UI implementation, Quote data handling, and "Favourites" logic. |
+| **Arjun Vivekananthan** | Study Timer | Pomodoro logic, CountdownTimer implementation, and UI state management. |
+| **Daniel Sha** | Quiz Zone | Quiz data structure, scoring logic, and result feedback system. |
+
+### Stage 2: Advanced Feature Implementations
+
+For Stage 2, each member implemented a standalone feature requiring advanced Android concepts.
+
+| Member | Feature Name | Contribution Details |
+|--------|--------------|----------------------|
+| **Fan Zhizhong** | **Subscription System & Analytics Dashboard** | • **Subscription Manager:** Implemented a Singleton pattern to manage global user tiers (Free/Silver/Gold) and handle Firestore sync.<br>• **Analytics Engine:** Created logic to calculate consistency scores, streaks, and completion rates.<br>• **Mood Calendar:** Developed a custom calendar logic (Silver Tier) with read-only retrospective restrictions. |
+| **Pey Zhi Xun** | **Study Groups & Notes Categories** | • **Advanced Notes:** Added category grouping logic to organize notes by subject/module.<br>• **Study Group System:** Implemented a real-time messaging feature allowing for 1-on-1 chats and group discussions using Firestore listeners. |
+| **Arjun Vivekananthan** | **Lo-fi Beats Media Player** | • **Media Service:** Created a foreground service to handle audio playback (Lo-fi beats) that continues running even when the app is minimized.<br>• **Player Controls:** Implemented Play/Pause/Skip logic and audio resource management. |
+| **Daniel Sha** | **Reflections & Streak System** | • **Study Journal:** Created a reflection entry system for users to log their learning progress.<br>• **Streak Logic:** Implemented a logic engine to track consecutive days of activity, gamifying the study experience. |
 
 ---
 
@@ -187,9 +238,10 @@ A gamified focus timer designed to reduce screen distraction and reinforce produ
 | Motivational Quotes  | Yes            | No           | No       | No     |
 | Study Timer          | Yes            | No           | No       | Yes    |
 | Study Tips / Habits  | Yes            | No           | No       | Limited |
-| User Accounts        | Firebase       | Optional     | No       | No     |
-| Cloud Sync           | KIV            | Not full     | No       | No     |
-| Student Focus        | Very Strong    | Medium       | Strong   | Medium |
+| **Real-Time Chat** | **Yes (Stage 2)** | No        | No       | No     |
+| **Cloud Sync** | **Yes (Stage 2)** | Not full   | No       | No     |
+| **Analytics/Streaks**| **Yes (Stage 2)** | Yes        | No       | Yes    |
+| **Focus Music** | **Yes (Stage 2)** | No         | No       | No     |
 | Target Age Group     | All students   | Uni/JC       | Sec/Tertiary | All students |
 
 StudyBuddy positions itself as an **all-in-one study companion with motivational elements**, unlike competitors that focus only on timers or planners.  
@@ -210,7 +262,7 @@ StudyBuddy positions itself as an **all-in-one study companion with motivational
 - Very easy onboarding  
 
 #### **Forest**
-- Powerful gamification — tree-growing system  
+- Powerful gamification — tree-growing system
 - Excellent habit-building appeal  
 - Strong psychological engagement  
 
@@ -270,24 +322,17 @@ StudyBuddy positions itself as an **all-in-one study companion with motivational
 - Lightweight and simple (less overwhelming than Notion/StudySmarter)  
 - Integrated ecosystem: *Notes + Motivation + Habits* ---
 
-## Planned Stage 2 Features
-
-Each team member will implement one *stand-alone* feature requiring new concepts, such as a new Activity, background Service, or advanced API.
-
-> **To be updated once finalized by the team.**
-
-| Member | Planned Stage 2 Feature |
-|--------|--------------------------|
-| **Pey Zhi Xun** | Notes Category & Study Groups |
-| **Fan Zhizhong** | Subscription Plans |
-| **Arjun Vivekananthan** | Focus Music Player |
-| **Daniel Sha** | Study Reflection Journal |
+**New in Stage 2:**
+1.  **Collaborative Learning:** Unlike solitary study apps, our new **Study Groups** feature facilitates peer-to-peer support, allowing students to chat and share resources in real-time.
+2.  **Immersive Focus Environment:** By integrating a **Lo-fi Media Player** directly into the app, we reduce the need for students to switch apps (and risk distraction) to control their music.
+3.  **Holistic Well-being & Reflection:** We moved beyond simple task tracking by adding **Mood Calendars** and **Reflection Journals**, acknowledging that mental health and metacognition are key to academic success.
+4.  **Gamified Consistency:** The combination of **Streaks, Analytics, and Unlockable Tiers** creates a robust behavioral loop that rewards long-term consistency rather than just one-off usage.
 
 ---
 
 ## LLM Usage Declaration
 
-This project uses **ChatGPT** to assist with:
+This project uses **ChatGPT** and **Gemini** to assist with:
 
 - Kotlin syntax clarification  
 - Debugging and code review  
@@ -296,7 +341,7 @@ This project uses **ChatGPT** to assist with:
 - Learning Android concepts (Room, ViewModel, etc.)  
 
 **All team members** (Zhizhong, Zhi Xun, Arjun, Daniel) used ChatGPT as a learning and support tool.  
-All AI output was **reviewed, edited, and customized** before inclusion in code.
+All AI output was **reviewed, edited, and customized** before inclusion in the final codebase.
 
 ---
 
@@ -339,32 +384,57 @@ All AI output was **reviewed, edited, and customized** before inclusion in code.
 
 **Authentication & Notes**<br />
 <p float="left">
-  <img src="screenshots/app/login.png" width="200" alt="Login Screen" />
-  <img src="screenshots/app/notes.png" width="200" alt="Notes List" /> 
+  <img src="screenshots/app/stage1/login.png" width="200" alt="Login Screen" />
+  <img src="screenshots/app/stage1/notes.png" width="200" alt="Notes List" />
 </p>
 
 <br />
 
 **Motivation Hub**<br />
 <p float="left">
-  <img src="screenshots/app/motivation.png" width="200" alt="Motivation Screen" />
+  <img src="screenshots/app/stage1/motivation.png" width="200" alt="Motivation Screen" />
 </p>
 
 <br />
 
 **Study Timer (Pomodoro)**<br />
 <p float="left">
-  <img src="screenshots/app/timer.png" width="200" alt="Timer Screen" />
+  <img src="screenshots/app/stage1/timer.png" width="200" alt="Timer Screen" />
 </p>
 
 <br />
 
 **Quiz Zone**<br />
 <p float="left">
-  <img src="screenshots/app/quiz.png" width="200" alt="Quiz Screen" />
+  <img src="screenshots/app/stage1/quiz.png" width="200" alt="Quiz Screen" />
 </p>
 
----
+### 4. App Screenshots (Stage 2)
+
+**Subscription & Analytics (Zhizhong)**
+<p float="left">
+  <img src="screenshots/stage2/subscription_plans.png" width="200" alt="Subscription Plans" />
+  <img src="screenshots/stage2/analytics_dashboard.png" width="200" alt="Analytics Dashboard" />
+  <img src="screenshots/stage2/mood_calendar.png" width="200" alt="Mood Calendar" />
+</p>
+
+**Study Groups & Advanced Notes (Zhi Xun)**
+<p float="left">
+  <img src="screenshots/stage2/note_categories.png" width="200" alt="Note Categories" />
+  <img src="screenshots/stage2/study_group_chat.png" width="200" alt="Study Group Chat" />
+</p>
+
+**Lo-fi Beats Media Player (Arjun)**
+<p float="left">
+  <img src="screenshots/stage2/music_player_minimized.png" width="200" alt="Minimized Player" />
+  <img src="screenshots/stage2/music_player_full.png" width="200" alt="Full Media Controls" />
+</p>
+
+**Reflection Journal & Streaks (Daniel)**
+<p float="left">
+  <img src="screenshots/stage2/journal_entry.png" width="200" alt="Journal Entry" />
+  <img src="screenshots/stage2/streak_popup.png" width="200" alt="Streak Achievement" />
+</p>
 
 ## Disclaimer
 
