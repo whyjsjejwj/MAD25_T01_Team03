@@ -105,7 +105,7 @@ fun FloatingTimer(timerViewModel: TimerViewModel) {
                         // Button to pause/resume timer depending on current state
                         IconButton(onClick = {
                             if (isPaused) {
-                                timerViewModel.resumeTimer()
+                                timerViewModel.startTimer(0,0)
                             } else {
                                 timerViewModel.pauseTimer()
                             }
