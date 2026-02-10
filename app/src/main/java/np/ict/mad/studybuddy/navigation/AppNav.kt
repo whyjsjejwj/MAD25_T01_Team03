@@ -379,9 +379,6 @@ fun AppNav() {
                 TimerScreen(
                     nav = nav,
                     viewModel = timerViewModel,
-                    uid = uid,
-                    displayName = name,
-                    email = email,
                     onOpenHome = { goHome(uid, name, email) },
                     onOpenQuiz = { nav.navigate("quiz/$uid/$name/$email") },
                     onOpenMotivation = { nav.navigate("motivation/$uid/$name/$email") },
