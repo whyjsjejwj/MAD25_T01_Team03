@@ -413,15 +413,15 @@ All AI output was **reviewed, edited, and customized** before inclusion in the f
 
 **Subscription & Analytics (Zhizhong)**
 <p float="left">
-  <img src="screenshots/stage2/subscription_plans.png" width="200" alt="Subscription Plans" />
-  <img src="screenshots/stage2/analytics_dashboard.png" width="200" alt="Analytics Dashboard" />
-  <img src="screenshots/stage2/mood_calendar.png" width="200" alt="Mood Calendar" />
+  <img src="screenshots/app/stage2/subscription_plans.png" width="200" alt="Subscription Plans" />
+  <img src="screenshots/app/stage2/analytics_dashboard.png" width="200" alt="Analytics Dashboard" />
+  <img src="screenshots/app/stage2/mood_calendar.png" width="200" alt="Mood Calendar" />
 </p>
 
 **Study Groups & Advanced Notes (Zhi Xun)**
 <p float="left">
-  <img src="screenshots/stage2/note_categories.png" width="200" alt="Note Categories" />
-  <img src="screenshots/stage2/study_group_chat.png" width="200" alt="Study Group Chat" />
+  <img src="screenshots/app/stage2/note_categories.png" width="200" alt="Note Categories" />
+  <img src="screenshots/app/stage2/study_group_chat.png" width="200" alt="Study Group Chat" />
 </p>
 
 **Lo-fi Beats Media Player (Arjun)**
@@ -432,8 +432,8 @@ All AI output was **reviewed, edited, and customized** before inclusion in the f
 
 **Reflection Journal & Streaks (Daniel)**
 <p float="left">
-  <img src="screenshots/stage2/journal_entry.png" width="200" alt="Journal Entry" />
-  <img src="screenshots/stage2/streak_popup.png" width="200" alt="Streak Achievement" />
+  <img src="screenshots/app/stage2/journal_entry.png" width="200" alt="Journal Entry" />
+  <img src="screenshots/app/stage2/streak_popup.png" width="200" alt="Streak Achievement" />
 </p>
 
 ## Disclaimer
